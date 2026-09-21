@@ -1,0 +1,21 @@
+{
+  "name": "ecommerce-platform",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @ecommerce/web dev",
+    "dev:admin": "pnpm --filter @ecommerce/admin dev",
+    "dev:api": "pnpm --filter @ecommerce/api dev",
+    "build": "pnpm -r --filter=./apps/* --filter=./packages/* build",
+    "build:web": "pnpm --filter @ecommerce/web build",
+    "build:admin": "pnpm --filter @ecommerce/admin build",
+    "lint": "pnpm -r --filter=./apps/* --filter=./packages/* lint",
+    "typecheck": "pnpm -r --filter=./apps/* --filter=./packages/* typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

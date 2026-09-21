@@ -1,0 +1,283 @@
+// Prisma schema — mirrors the domain models in packages/contracts.
+// Foundation schema. The initial migration is prepared in prisma/migrations;
+// apply it with a real PostgreSQL DATABASE_URL using `pnpm prisma:migrate`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductVisibility {
+  visible
+  hidden
+  draft
+}
+
+enum OrderStatus {
+  pending
+  paid
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+enum PromotionType {
+  percentage
+  fixed
+  free_shipping
+}
+
+enum HomepageSectionType {
+  hero
+  product_grid
+  product_carousel
+  category_grid
+  collection
+  banner
+  rich_content
+  newsletter
+}
+
+model Category {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  description    String?
+  imageUrl       String?
+  parentId       String?
+  parent         Category?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: SetNull)
+  children       Category[] @relation("CategoryToCategory")
+  position       Int        @default(0)
+  isVisible      Boolean    @default(true)
+  seoTitle       String?
+  seoDescription String?
+  products       Product[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([parentId])
+  @@index([isVisible, position])
+}
+
+model Collection {
+  id          String              @id @default(cuid())
+  name        String
+  slug        String              @unique
+  description String?
+  imageUrl    String?
+  isVisible   Boolean             @default(true)
+  products    ProductCollection[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+// Explicit join table (rather than an implicit m:n) so ordering/metadata
+// can be added later without a migration that changes the relation shape.
+model ProductCollection {
+  productId    String
+  collectionId String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([productId, collectionId])
+}
+
+model Product {
+  id                String              @id @default(cuid())
+  name              String
+  slug              String              @unique
+  description       String
+  shortDescription  String?
+  price             Decimal             @db.Decimal(10, 2)
+  salePrice         Decimal?            @db.Decimal(10, 2)
+  currency          String              @default("GHS")
+  sku               String              @unique
+  categoryId        String?
+  category          Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  collections       ProductCollection[]
+  tags              String[]
+  stock             Int                 @default(0)
+  lowStockThreshold Int                 @default(5)
+  trackInventory    Boolean             @default(true)
+  isFeatured        Boolean             @default(false)
+  isBestSeller      Boolean             @default(false)
+  isNewArrival      Boolean             @default(false)
+  visibility        ProductVisibility   @default(visible)
+  seoTitle          String?
+  seoDescription    String?
+  images            ProductImage[]
+  options           ProductOption[]
+  variants          ProductVariant[]
+  orderItems        OrderItem[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([categoryId])
+  @@index([visibility, createdAt])
+  @@index([isNewArrival, createdAt])
+  @@index([isFeatured, createdAt])
+  @@index([isBestSeller, createdAt])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String  @default("")
+  position  Int     @default(0)
+
+  @@index([productId, position])
+}
+
+model ProductOption {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  values    String[]
+
+  @@index([productId])
+}
+
+model ProductVariant {
+  id         String      @id @default(cuid())
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku        String      @unique
+  options    Json // { [optionName]: value }
+  price      Decimal?    @db.Decimal(10, 2)
+  salePrice  Decimal?    @db.Decimal(10, 2)
+  stock      Int         @default(0)
+  imageUrl   String?
+  isDefault  Boolean     @default(false)
+  orderItems OrderItem[]
+
+  @@index([productId])
+}
+
+model HomepageSection {
+  id        String              @id @default(cuid())
+  type      HomepageSectionType
+  position  Int                 @default(0)
+  isEnabled Boolean             @default(true)
+  title     String?
+  subtitle  String?
+  // Type-specific config (product/category ids, banner html, etc.) kept as
+  // JSON so new section types don't require a migration.
+  config    Json
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([isEnabled, position])
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String    @unique
+  phone     String?
+  addresses Address[]
+  orders    Order[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  fullName   String
+  phone      String?
+  line1      String
+  line2      String?
+  city       String
+  region     String?
+  country    String
+  postalCode String?
+  isDefault  Boolean  @default(false)
+
+  @@index([customerId])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  customerId      String?
+  customer        Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerEmail   String
+  items           OrderItem[]
+  status          OrderStatus @default(pending)
+  subtotal        Decimal     @db.Decimal(10, 2)
+  shipping        Decimal     @default(0) @db.Decimal(10, 2)
+  tax             Decimal     @default(0) @db.Decimal(10, 2)
+  discount        Decimal     @default(0) @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+  currency        String      @default("GHS")
+  shippingAddress Json?
+  billingAddress  Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id        String          @id @default(cuid())
+  orderId   String
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  name      String
+  imageUrl  String?
+  options   Json
+  unitPrice Decimal         @db.Decimal(10, 2)
+  quantity  Int
+  total     Decimal         @db.Decimal(10, 2)
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model Promotion {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  type        PromotionType
+  value       Decimal       @db.Decimal(10, 2)
+  isActive    Boolean       @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  usageLimit  Int?
+  usageCount  Int           @default(0)
+  minSubtotal Decimal?      @db.Decimal(10, 2)
+
+  @@index([isActive, startsAt, endsAt])
+}
+
+// Single-row table for the one store this platform instance serves.
+model StoreSettings {
+  id               String   @id @default("store_settings")
+  storeName        String
+  storeDescription String?
+  logoUrl          String?
+  faviconUrl       String?
+  currency         String   @default("GHS")
+  contactEmail     String?
+  supportPhone     String?
+  socialLinks      Json     @default("{}")
+  themeColor       String   @default("#111111")
+  shippingFlatRate Decimal  @default(0) @db.Decimal(10, 2)
+  taxRatePercent   Decimal  @default(0) @db.Decimal(5, 2)
+  updatedAt        DateTime @updatedAt
+}
