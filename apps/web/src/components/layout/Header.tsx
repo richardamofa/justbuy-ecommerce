@@ -70,7 +70,7 @@ export function Header() {
           <form
             onSubmit={submitSearch}
             className={cn(
-              "group flex items-center overflow-hidden rounded-full border bg-paper-50 transition-[width,box-shadow,border-color] duration-200",
+              "group flex items-center overflow-hidden rounded-sm border bg-paper-50 transition-[width,box-shadow,border-color] duration-200",
               searchOpen
                 ? "w-56 border-moss-500 shadow-[0_4px_18px_rgba(76,104,74,0.14)] sm:w-72"
                 : "w-9 border-transparent bg-transparent shadow-none"
