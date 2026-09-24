@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import { User } from "lucide-react";
 import { Button, Card, CardContent, EmptyState } from "@ecommerce/ui";
+import { User } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function AccountPage() {
   return (
@@ -10,11 +10,11 @@ export function AccountPage() {
           <EmptyState
             icon={<User className="h-5 w-5" />}
             title="Accounts aren't wired up yet"
-            description="Real customer accounts and authentication arrive with the API. This page is a placeholder for sign-in and profile management."
+            description="Customer accounts and authentication will be connected when the account system is implemented."
             action={
-              <Link to="/orders">
+              <Link to="/shop">
                 <Button variant="outline" size="sm">
-                  View order history (mock)
+                  Continue shopping
                 </Button>
               </Link>
             }
@@ -24,3 +24,4 @@ export function AccountPage() {
     </div>
   );
 }
+

@@ -5,7 +5,7 @@ import Fastify, {
 
 import { loadConfig, type AppConfig } from "./config/env.js";
 import { errorFromUnknown } from "./lib/errors.js";
-
+import { registerAdminAuthRoutes } from "./routes/admin-auth.js";
 import { registerHomepageRoutes } from "./routes/homepage.js";
 import { registerOrderRoutes } from "./routes/order.js";
 import { registerProductRoutes } from "./routes/products.js";
@@ -20,9 +20,13 @@ export async function buildApp(
     bodyLimit: 1_048_576,
   });
 
-  await app.register(cors, {
-    origin: config.CORS_ORIGIN,
-  });
+    await app.register(cors, {
+      origin: [
+        "http://localhost:5173",
+        "http://localhost:5174",
+      ],
+      credentials: true,
+    });
 
   app.setErrorHandler(
     async (error, request, reply) => {
@@ -84,6 +88,10 @@ export async function buildApp(
       prefix: "/api/v1",
     },
   );
+
+  await app.register(registerAdminAuthRoutes, {
+    prefix: "/api/v1",
+  });
 
   return app;
 }
