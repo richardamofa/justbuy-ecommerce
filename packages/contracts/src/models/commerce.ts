@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { imageSchema, moneySchema } from "./shared.js";
 
-/* ------------------------------- Cart ---------------------------------- */
+/*  Cart  */
 
 export const cartItemSchema = z.object({
   id: z.string(), // cart line id
@@ -23,7 +23,7 @@ export const cartSchema = z.object({
 });
 export type Cart = z.infer<typeof cartSchema>;
 
-/* ------------------------------ Customer -------------------------------- */
+/*  Customer - */
 
 export const addressSchema = z.object({
   id: z.string().optional(),
@@ -52,7 +52,7 @@ export const customerSchema = z.object({
 });
 export type Customer = z.infer<typeof customerSchema>;
 
-/* ------------------------------- Order ---------------------------------- */
+/*  Order  */
 
 export const orderStatusSchema = z.enum([
   "pending",
@@ -98,7 +98,7 @@ export const orderSchema = z.object({
 });
 export type Order = z.infer<typeof orderSchema>;
 
-/* ----------------------------- Promotion --------------------------------- */
+/*  Promotion */
 
 export const promotionTypeSchema = z.enum(["percentage", "fixed", "free-shipping"]);
 export type PromotionType = z.infer<typeof promotionTypeSchema>;
@@ -117,7 +117,7 @@ export const promotionSchema = z.object({
 });
 export type Promotion = z.infer<typeof promotionSchema>;
 
-/* --------------------------- Store Settings ------------------------------ */
+/* Store Settings  */
 
 export const storeSettingsSchema = z.object({
   storeName: z.string(),
