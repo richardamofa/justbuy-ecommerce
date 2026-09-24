@@ -1,7 +1,7 @@
 import type {
-    ProductCreateInput,
-    ProductListQuery,
-    ProductUpdateInput,
+  ProductCreateInput,
+  ProductListQuery,
+  ProductUpdateInput,
 } from "@ecommerce/contracts";
 import { Prisma } from "@prisma/client";
 import { HttpError } from "../lib/errors.js";
@@ -14,8 +14,6 @@ const productInclude = {
   variants: true,
   collections: true,
 };
-
-type ProductRecord = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
 
 const productIncludeForQuery = productInclude satisfies Prisma.ProductInclude;
 
@@ -108,7 +106,7 @@ export async function listProducts(query: ProductListQuery) {
   ]);
 
   return {
-    items: products.map((product) => mapProduct(product as ProductRecord)),
+    items: products.map((product) => mapProduct(product)),
     page: query.page,
     pageSize: query.pageSize,
     total,
@@ -119,12 +117,12 @@ export async function listProducts(query: ProductListQuery) {
 export async function getProductBySlug(slug: string) {
   const product = await prisma.product.findUnique({ where: { slug }, include: productIncludeForQuery });
   if (!product || product.visibility !== "visible") throw HttpError.notFound("Product not found");
-  return mapProduct(product as ProductRecord);
+  return mapProduct(product);
 }
 
 export async function createProduct(input: ProductCreateInput) {
   const product = await prisma.product.create({ data: productCreateData(input), include: productIncludeForQuery });
-  return mapProduct(product as ProductRecord);
+  return mapProduct(product);
 }
 
 export async function updateProduct(id: string, input: ProductUpdateInput) {
@@ -176,7 +174,7 @@ export async function updateProduct(id: string, input: ProductUpdateInput) {
     return tx.product.update({ where: { id }, data, include: productIncludeForQuery });
   });
 
-  return mapProduct(product as ProductRecord);
+  return mapProduct(product);
 }
 
 export async function deleteProduct(id: string) {

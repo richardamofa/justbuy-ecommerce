@@ -1,9 +1,14 @@
 import { z } from "zod";
-import { storeSettingsSchema } from "./models/commerce.js";
+import {
+  orderSchema,
+  orderStatusSchema,
+  storeSettingsSchema,
+} from "./models/commerce.js";
 import { homepageConfigSchema } from "./models/homepage.js";
 import { productSchema } from "./models/product.js";
 import { paginatedSchema } from "./models/shared.js";
 import { categorySchema, collectionSchema } from "./models/taxonomy.js";
+
 
 export const apiErrorCodeSchema = z.enum([
   "validation_error",
@@ -23,14 +28,7 @@ export const apiErrorSchema = z.object({
 });
 export type ApiError = z.infer<typeof apiErrorSchema>;
 
-export const apiSuccessSchema = <T extends z.ZodTypeAny>(data: T) => z.object({ data });
-
-/**
- * These describe the eventual REST boundary between the frontends and the
- * Fastify API. Query hooks in apps/web and apps/admin are built against
- * these shapes so swapping mock services for real `fetch` calls requires
- * no changes to components.
- */
+export const apiSuccessSchema = <T extends z.ZodTypeAny>(data: T) => z.object({ data })
 
 export const productListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -85,9 +83,42 @@ export const homepageResponseSchema = homepageConfigSchema;
 
 export const storeSettingsResponseSchema = storeSettingsSchema;
 
-/** GET /products, GET /products/:slug, GET /categories, GET /collections,
- *  GET /homepage, GET /store — endpoint map kept here purely as documentation
- *  for the boundary; the actual client lives in apps/*'s services layer. */
+export const orderCreateItemSchema = z.object({
+  productId: z.string().min(1),
+  variantId: z.string().min(1).nullable().optional(),
+  quantity: z.number().int().positive(),
+});
+
+export const orderCreateInputSchema = z.object({
+  customerEmail: z.string().email(),
+  customerId: z.string().nullable().optional(),
+  items: z.array(orderCreateItemSchema).min(1),
+  shippingAddress: z.record(z.string(), z.unknown()).optional(),
+  billingAddress: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type OrderCreateInput = z.infer<typeof orderCreateInputSchema>;
+
+export const orderStatusUpdateInputSchema = z.object({
+  status: orderStatusSchema,
+});
+
+export type OrderStatusUpdateInput = z.infer<
+  typeof orderStatusUpdateInputSchema
+>;
+
+export const orderListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(25),
+  status: orderStatusSchema.optional(),
+  search: z.string().optional(),
+});
+
+export type OrderListQuery = z.infer<typeof orderListQuerySchema>;
+
+export const orderResponseSchema = orderSchema;
+export const orderListResponseSchema = paginatedSchema(orderSchema);
+
 export const API_ENDPOINTS = {
   products: "/api/v1/products",
   product: (slug: string) => `/api/v1/products/${slug}`,
@@ -97,4 +128,9 @@ export const API_ENDPOINTS = {
   collection: (slug: string) => `/api/v1/collections/${slug}`,
   homepage: "/api/v1/homepage",
   store: "/api/v1/store",
+  orders: "/api/v1/orders",
+  order: (id: string) => `/api/v1/orders/${id}`,
+  adminOrders: "/api/v1/admin/orders",
+  adminOrder: (id: string) => `/api/v1/admin/orders/${id}`,
 } as const;
+

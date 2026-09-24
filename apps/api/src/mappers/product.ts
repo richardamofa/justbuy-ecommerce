@@ -1,32 +1,36 @@
 import type { Product as ContractProduct } from "@ecommerce/contracts";
-import type {
-    Product,
-    ProductCollection,
-    ProductImage,
-    ProductOption,
-    ProductVariant,
-} from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
-type ProductWithRelations = Product & {
-  images: ProductImage[];
-  options: ProductOption[];
-  variants: ProductVariant[];
-  collections: ProductCollection[];
-};
+const productInclude = {
+  images: { orderBy: { position: "asc" as const } },
+  options: true,
+  variants: true,
+  collections: true,
+} satisfies Prisma.ProductInclude;
 
-export function mapProduct(product: ProductWithRelations): ContractProduct {
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: typeof productInclude;
+}>;
+
+export function mapProduct(
+  product: ProductWithRelations,
+): ContractProduct {
   return {
     id: product.id,
     name: product.name,
     slug: product.slug,
     description: product.description,
+
     ...(product.shortDescription
       ? { shortDescription: product.shortDescription }
       : {}),
+
     price: Number(product.price),
+
     ...(product.salePrice !== null
       ? { salePrice: Number(product.salePrice) }
       : {}),
+
     currency: product.currency,
     sku: product.sku,
 
@@ -35,7 +39,7 @@ export function mapProduct(product: ProductWithRelations): ContractProduct {
       .map((image) => ({
         id: image.id,
         url: image.url,
-        alt: image.alt,
+        alt: image.alt ?? product.name,
         position: image.position,
       })),
 
@@ -56,19 +60,24 @@ export function mapProduct(product: ProductWithRelations): ContractProduct {
       id: variant.id,
       productId: variant.productId,
       sku: variant.sku,
+
       options:
         typeof variant.options === "object" &&
         variant.options !== null &&
         !Array.isArray(variant.options)
           ? (variant.options as Record<string, string>)
           : {},
+
       ...(variant.price !== null
         ? { price: Number(variant.price) }
         : {}),
+
       ...(variant.salePrice !== null
         ? { salePrice: Number(variant.salePrice) }
         : {}),
+
       stock: variant.stock,
+
       ...(variant.imageUrl
         ? {
             image: {
@@ -79,6 +88,7 @@ export function mapProduct(product: ProductWithRelations): ContractProduct {
             },
           }
         : {}),
+
       isDefault: variant.isDefault,
     })),
 
@@ -89,12 +99,15 @@ export function mapProduct(product: ProductWithRelations): ContractProduct {
     isFeatured: product.isFeatured,
     isBestSeller: product.isBestSeller,
     isNewArrival: product.isNewArrival,
+
     visibility: product.visibility,
 
     ...(product.seoTitle || product.seoDescription
       ? {
           seo: {
-            ...(product.seoTitle ? { title: product.seoTitle } : {}),
+            ...(product.seoTitle
+              ? { title: product.seoTitle }
+              : {}),
             ...(product.seoDescription
               ? { description: product.seoDescription }
               : {}),
@@ -102,7 +115,6 @@ export function mapProduct(product: ProductWithRelations): ContractProduct {
         }
       : {}),
 
-    // These are not currently stored in Prisma.
     reviewCount: 0,
 
     createdAt: product.createdAt.toISOString(),
