@@ -1,70 +1,96 @@
-import type { Product, ProductListQuery, ProductListResponse } from "@ecommerce/contracts";
-import { mockProducts, findProductBySlug } from "../mocks/products";
-import { findCategoryBySlug } from "../mocks/categories";
-import { findCollectionBySlug } from "../mocks/collections";
-import { delay } from "./delay";
+import type {
+  Product,
+  ProductListQuery,
+  ProductListResponse,
+} from "@ecommerce/contracts";
+import { apiRequest } from "../lib/api-client";
 
-/**
- * This module is the API boundary for products. Every function returns the
- * same shape the eventual `GET /products` / `GET /products/:slug` endpoints
- * will return, so query hooks never need to change when the mock is
- * replaced with real `fetch` calls.
- */
-export async function listProducts(query: Partial<ProductListQuery> = {}): Promise<ProductListResponse> {
-  const { page = 1, pageSize = 24, categorySlug, collectionSlug, search, sort = "newest", minPrice, maxPrice, tags } = query;
+function buildQueryString(query: Partial<ProductListQuery>): string {
+  const params = new URLSearchParams();
 
-  let items = [...mockProducts].filter((p) => p.visibility === "visible");
-
-  if (categorySlug) {
-    const category = findCategoryBySlug(categorySlug);
-    if (category) items = items.filter((p) => p.categoryId === category.id);
-  }
-  if (collectionSlug) {
-    const collection = findCollectionBySlug(collectionSlug);
-    if (collection) items = items.filter((p) => collection.productIds.includes(p.id));
-  }
-  if (search) {
-    const q = search.toLowerCase();
-    items = items.filter((p) => p.name.toLowerCase().includes(q) || p.tags.some((t) => t.includes(q)));
-  }
-  if (tags?.length) {
-    items = items.filter((p) => tags.every((t) => p.tags.includes(t)));
-  }
-  if (minPrice != null) items = items.filter((p) => p.price >= minPrice);
-  if (maxPrice != null) items = items.filter((p) => p.price <= maxPrice);
-
-  switch (sort) {
-    case "price-asc":
-      items.sort((a, b) => a.price - b.price);
-      break;
-    case "price-desc":
-      items.sort((a, b) => b.price - a.price);
-      break;
-    case "best-selling":
-      items.sort((a, b) => Number(b.isBestSeller) - Number(a.isBestSeller));
-      break;
-    case "featured":
-      items.sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured));
-      break;
-    default:
-      items.sort((a, b) => Number(b.isNewArrival) - Number(a.isNewArrival));
+  if (query.page != null) {
+    params.set("page", String(query.page));
   }
 
-  const total = items.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const start = (page - 1) * pageSize;
-  const pageItems = items.slice(start, start + pageSize);
+  if (query.pageSize != null) {
+    params.set("pageSize", String(query.pageSize));
+  }
 
-  return delay({ items: pageItems, page, pageSize, total, totalPages });
+  if (query.categorySlug) {
+    params.set("categorySlug", query.categorySlug);
+  }
+
+  if (query.collectionSlug) {
+    params.set("collectionSlug", query.collectionSlug);
+  }
+
+  if (query.search) {
+    params.set("search", query.search);
+  }
+
+  if (query.sort) {
+    params.set("sort", query.sort);
+  }
+
+  if (query.minPrice != null) {
+    params.set("minPrice", String(query.minPrice));
+  }
+
+  if (query.maxPrice != null) {
+    params.set("maxPrice", String(query.maxPrice));
+  }
+
+  if (query.tags?.length) {
+    for (const tag of query.tags) {
+      params.append("tags", tag);
+    }
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `?${queryString}` : "";
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
-  return delay(findProductBySlug(slug) ?? null);
+export async function listProducts(
+  query: Partial<ProductListQuery> = {},
+): Promise<ProductListResponse> {
+  return apiRequest<ProductListResponse>(
+    `/api/v1/products${buildQueryString(query)}`,
+  );
 }
 
-export async function listRelatedProducts(product: Product, limit = 4): Promise<Product[]> {
-  const related = mockProducts
-    .filter((p) => p.id !== product.id && p.categoryId === product.categoryId)
+export async function getProductBySlug(
+  slug: string,
+): Promise<Product | null> {
+  try {
+    return await apiRequest<Product>(
+      `/api/v1/products/${encodeURIComponent(slug)}`,
+    );
+  } catch (error) {
+    if (error instanceof Error && error.name === "ApiRequestError") {
+      const apiError = error as { status?: number };
+
+      if (apiError.status === 404) {
+        return null;
+      }
+    }
+
+    throw error;
+  }
+}
+
+export async function listRelatedProducts(
+  product: Product,
+  limit = 4,
+): Promise<Product[]> {
+  const response = await listProducts({
+    categorySlug: undefined,
+    page: 1,
+    pageSize: limit + 1,
+  });
+
+  return response.items
+    .filter((item) => item.id !== product.id)
+    .filter((item) => item.categoryId === product.categoryId)
     .slice(0, limit);
-  return delay(related);
 }

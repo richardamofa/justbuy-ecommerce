@@ -1,9 +1,9 @@
 import type { ApiErrorCode } from "@ecommerce/contracts";
 import {
-    PrismaClientInitializationError,
-    PrismaClientKnownRequestError,
-    PrismaClientUnknownRequestError,
-    PrismaClientValidationError,
+  PrismaClientInitializationError,
+  PrismaClientKnownRequestError,
+  PrismaClientUnknownRequestError,
+  PrismaClientValidationError,
 } from "@prisma/client/runtime/library";
 import { ZodError } from "zod";
 
@@ -35,6 +35,14 @@ export class HttpError extends Error {
   static notImplemented(message = "This operation is not implemented") {
     return new HttpError(501, "not_implemented", message);
   }
+
+static unauthorized(message = "Unauthorized.") {
+  return new HttpError(
+    401,
+    "internal_error",
+    message,
+  );
+}
 }
 
 export function errorFromUnknown(error: unknown): HttpError {

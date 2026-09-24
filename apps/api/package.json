@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "create-admin": "node --env-file=.env --import=tsx src/scripts/create-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
