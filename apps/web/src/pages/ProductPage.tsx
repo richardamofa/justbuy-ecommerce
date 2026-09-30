@@ -6,6 +6,7 @@ import { useProduct } from "../hooks/queries";
 import * as productsApi from "../services/products";
 import { getEffectivePrice, isOnSale, isOutOfStock, isLowStock } from "@ecommerce/contracts";
 import { useCartStore } from "../store/cart";
+import { useToast } from "@ecommerce/ui";
 import {
   Badge,
   Button,
@@ -20,6 +21,7 @@ export function ProductPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   const { data: product, isLoading, isError } = useProduct(slug);
   const addItem = useCartStore((s) => s.addItem);
+  const { success, warning } = useToast();
 
   const [selectedOptions, setSelectedOptions] = React.useState<Record<string, string>>({});
   const [quantity, setQuantity] = React.useState(1);
@@ -55,11 +57,13 @@ export function ProductPage() {
     return <ErrorState title="Product not found" className="mx-auto max-w-7xl px-4 py-24" />;
   }
 
-  const selectedVariant = product.variants.find((v) =>
-    Object.entries(selectedOptions).every(([k, val]) => v.options[k] === val)
-  );
-  const price = selectedVariant?.price ?? getEffectivePrice(product);
-  const onSale = isOnSale(product);
+  const selectedVariant = product.variants.length
+    ? product.variants.find((variant) => product.options.every((option) => variant.options[option.name] === selectedOptions[option.name]))
+    : undefined;
+  const price = selectedVariant?.salePrice ?? selectedVariant?.price ?? getEffectivePrice(product);
+  const onSale = selectedVariant?.salePrice != null
+    ? selectedVariant.salePrice < (selectedVariant.price ?? product.price)
+    : isOnSale(product);
   const outOfStock = product.variants.length ? (selectedVariant?.stock ?? 0) <= 0 : isOutOfStock(product);
   const lowStock = !outOfStock && (selectedVariant ? selectedVariant.stock <= 5 : isLowStock(product));
 
@@ -70,7 +74,7 @@ export function ProductPage() {
       </nav>
 
       <div className="grid gap-10 md:grid-cols-2">
-        <ProductGallery images={product.images} />
+        <ProductGallery images={selectedVariant?.image ? [selectedVariant.image, ...product.images] : product.images} />
 
         <div>
           <h1 className="font-display text-2xl text-ink-900 sm:text-3xl">{product.name}</h1>
@@ -88,7 +92,7 @@ export function ProductPage() {
               {formatMoney(price, product.currency)}
             </span>
             {onSale && (
-              <span className="text-ink-300 line-through">{formatMoney(product.price, product.currency)}</span>
+              <span className="text-ink-300 line-through">{formatMoney(selectedVariant?.price ?? product.price, product.currency)}</span>
             )}
             {onSale && <Badge tone="signal">Sale</Badge>}
           </div>
@@ -101,13 +105,19 @@ export function ProductPage() {
               <div className="flex flex-wrap gap-2">
                 {option.values.map((value) => {
                   const active = selectedOptions[option.name] === value;
+                  const available = !product.variants.length || product.variants.some((variant) =>
+                    product.options.every((otherOption) => otherOption.name === option.name
+                      ? variant.options[otherOption.name] === value
+                      : !selectedOptions[otherOption.name] || variant.options[otherOption.name] === selectedOptions[otherOption.name])
+                  );
                   return (
                     <button
                       key={value}
+                      disabled={!available}
                       onClick={() => setSelectedOptions((prev) => ({ ...prev, [option.name]: value }))}
                       className={
                         "rounded border px-3 py-1.5 text-sm transition-colors " +
-                        (active ? "border-ink-900 bg-ink-900 text-paper-50" : "border-ink-200 text-ink-700 hover:border-ink-900")
+                        (active ? "border-ink-900 bg-ink-900 text-paper-50" : available ? "border-ink-200 text-ink-700 hover:border-ink-900" : "cursor-not-allowed border-ink-100 text-ink-300 line-through")
                       }
                     >
                       {value}
@@ -132,7 +142,14 @@ export function ProductPage() {
               size="lg"
               className="flex-1"
               disabled={outOfStock}
-              onClick={() => addItem(product, selectedVariant, quantity)}
+              onClick={() => {
+                if (product.variants.length && !selectedVariant) {
+                  warning("Choose an available variant", "Select one value for each product option.");
+                  return;
+                }
+                addItem(product, selectedVariant, quantity);
+                success("Added to bag", `${product.name} is now in your shopping bag.`);
+              }}
             >
               {outOfStock ? "Sold out" : "Add to bag"}
             </Button>

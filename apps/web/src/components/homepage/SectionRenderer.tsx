@@ -1,21 +1,15 @@
 import type { HomepageSection } from "@ecommerce/contracts";
 import { HeroSection } from "./HeroSection";
 import {
-  ProductGridSection,
-  ProductCarouselSection,
+  BannerSection,
   CategoryGridSection,
   CollectionBlockSection,
-  BannerSection,
-  RichContentSection,
   NewsletterSection,
+  ProductCarouselSection,
+  ProductGridSection,
+  RichContentSection,
 } from "./Sections";
 
-/**
- * Renders a homepage from a config array of typed sections — the same
- * shape GET /homepage will eventually return. No section type is ever
- * hardcoded into a page; adding a new configured section here is enough
- * for it to show up on the homepage.
- */
 export function SectionRenderer({ sections }: { sections: HomepageSection[] }) {
   const enabled = [...sections].filter((s) => s.isEnabled).sort((a, b) => a.position - b.position);
 

@@ -23,13 +23,16 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const headers = new Headers(options.headers);
+
+  if (options.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -42,7 +45,8 @@ export async function apiRequest<T>(
     }
 
     throw new ApiRequestError(
-      error?.message ?? `Request failed with status ${response.status}.`,
+      error?.message ??
+        `Request failed with status ${response.status}.`,
       response.status,
       error?.details,
     );

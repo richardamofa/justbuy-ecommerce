@@ -1,5 +1,5 @@
 import type { Collection } from "@ecommerce/contracts";
-import { Badge, Button, EmptyState, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
+import { Badge, Button, EmptyState, Modal, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
 import { PageHeader } from "../components/PageHeader";
@@ -12,6 +12,7 @@ export function CollectionsPage() {
   const saveCollection = useSaveCollection();
   const deleteCollection = useDeleteCollection();
   const [modalCollection, setModalCollection] = React.useState<Collection | null | undefined>(undefined);
+  const [collectionToDelete, setCollectionToDelete] = React.useState<Collection | null>(null);
 
   return (
     <div>
@@ -64,9 +65,7 @@ export function CollectionsPage() {
                     </button>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete ${collection.name}? This cannot be undone.`)) {
-                          deleteCollection.mutate(collection.id);
-                        }
+                        setCollectionToDelete(collection);
                       }}
                       className="rounded p-1.5 text-ink-400 hover:bg-signal-50 hover:text-signal-DEFAULT"
                       aria-label="Delete collection"
@@ -89,6 +88,15 @@ export function CollectionsPage() {
         isSaving={saveCollection.isPending}
         onSave={(collection) => saveCollection.mutate(collection, { onSuccess: () => setModalCollection(undefined) })}
       />
+      <Modal isOpen={collectionToDelete !== null} onClose={() => !deleteCollection.isPending && setCollectionToDelete(null)} title="Delete collection">
+        <div className="space-y-5">
+          <p className="text-sm leading-6 text-ink-600">Delete <strong className="text-ink-900">{collectionToDelete?.name}</strong>? This action cannot be undone.</p>
+          <div className="flex justify-end gap-2 border-t border-ink-100 pt-4">
+            <Button variant="outline" onClick={() => setCollectionToDelete(null)} disabled={deleteCollection.isPending}>Cancel</Button>
+            <Button variant="danger" isLoading={deleteCollection.isPending} onClick={() => collectionToDelete && deleteCollection.mutate(collectionToDelete.id, { onSuccess: () => setCollectionToDelete(null) })}>Delete collection</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

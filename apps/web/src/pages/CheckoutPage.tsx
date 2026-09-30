@@ -6,7 +6,7 @@ import { CheckCircle2 } from "lucide-react";
 import { checkoutFormSchema, type CheckoutFormValues } from "../schemas/checkout";
 import { useCartStore, useCartTotals } from "../store/cart";
 import { useStoreSettings } from "../hooks/queries";
-import { Button, FormField, Input, Select, formatMoney } from "@ecommerce/ui";
+import { Button, FormField, Input, Select, formatMoney, useToast } from "@ecommerce/ui";
 
 export function CheckoutPage() {
   const items = useCartStore((s) => s.items);
@@ -14,6 +14,7 @@ export function CheckoutPage() {
   const { subtotal } = useCartTotals();
   const { data: settings } = useStoreSettings();
   const [placed, setPlaced] = React.useState(false);
+  const { warning } = useToast();
 
   const {
     register,
@@ -35,6 +36,7 @@ export function CheckoutPage() {
     await new Promise((r) => setTimeout(r, 700));
     setPlaced(true);
     clear();
+    warning("Order placed in demo mode", "No payment was processed because checkout is not connected to a payment provider yet.");
   }
 
   if (items.length === 0 && !placed) return <Navigate to="/cart" replace />;

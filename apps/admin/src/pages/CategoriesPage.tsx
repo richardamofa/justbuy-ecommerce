@@ -1,5 +1,5 @@
 import type { Category } from "@ecommerce/contracts";
-import { Badge, Button, EmptyState, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
+import { Badge, Button, EmptyState, Modal, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
 import { PageHeader } from "../components/PageHeader";
@@ -11,6 +11,7 @@ export function CategoriesPage() {
   const saveCategory = useSaveCategory();
   const deleteCategory = useDeleteCategory();
   const [modalCategory, setModalCategory] = React.useState<Category | null | undefined>(undefined);
+  const [categoryToDelete, setCategoryToDelete] = React.useState<Category | null>(null);
 
   const parentName = (id: string | null) => (id ? categories.find((c) => c.id === id)?.name ?? "—" : "—");
 
@@ -65,9 +66,7 @@ export function CategoriesPage() {
                     </button>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete ${category.name}? This cannot be undone.`)) {
-                          deleteCategory.mutate(category.id);
-                        }
+                        setCategoryToDelete(category);
                       }}
                       className="rounded p-1.5 text-ink-400 hover:bg-signal-50 hover:text-signal-DEFAULT"
                       aria-label="Delete category"
@@ -90,6 +89,15 @@ export function CategoriesPage() {
         isSaving={saveCategory.isPending}
         onSave={(category) => saveCategory.mutate(category, { onSuccess: () => setModalCategory(undefined) })}
       />
+      <Modal isOpen={categoryToDelete !== null} onClose={() => !deleteCategory.isPending && setCategoryToDelete(null)} title="Delete category">
+        <div className="space-y-5">
+          <p className="text-sm leading-6 text-ink-600">Delete <strong className="text-ink-900">{categoryToDelete?.name}</strong>? This action cannot be undone.</p>
+          <div className="flex justify-end gap-2 border-t border-ink-100 pt-4">
+            <Button variant="outline" onClick={() => setCategoryToDelete(null)} disabled={deleteCategory.isPending}>Cancel</Button>
+            <Button variant="danger" isLoading={deleteCategory.isPending} onClick={() => categoryToDelete && deleteCategory.mutate(categoryToDelete.id, { onSuccess: () => setCategoryToDelete(null) })}>Delete category</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
