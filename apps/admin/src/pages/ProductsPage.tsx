@@ -1,28 +1,29 @@
 import type { Product } from "@ecommerce/contracts";
 import { getEffectivePrice, isLowStock, isOutOfStock } from "@ecommerce/contracts";
 import {
-    Badge,
-    Button,
-    EmptyState,
-    formatMoney,
-    Input,
-    Skeleton,
-    Table,
-    Tbody,
-    Td,
-    Th,
-    Thead,
-    Tr,
+  Badge,
+  Button,
+  EmptyState,
+  formatMoney,
+  Input,
+  Modal,
+  Skeleton,
+  Table,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
 } from "@ecommerce/ui";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import * as React from "react";
 import { PageHeader } from "../components/PageHeader";
 import { ProductFormModal } from "../components/products/ProductFormModal";
 import {
-    useAdminCategories,
-    useAdminProducts,
-    useDeleteProduct,
-    useSaveProduct,
+  useAdminCategories,
+  useAdminProducts,
+  useDeleteProduct,
+  useSaveProduct,
 } from "../hooks/queries";
 
 export function ProductsPage() {
@@ -33,6 +34,7 @@ export function ProductsPage() {
 
   const [search, setSearch] = React.useState("");
   const [modalProduct, setModalProduct] = React.useState<Product | null | undefined>(undefined);
+  const [productToDelete, setProductToDelete] = React.useState<Product | null>(null);
 
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
   const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "—";
@@ -117,9 +119,7 @@ export function ProductsPage() {
                     </button>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete ${product.name}? This cannot be undone.`)) {
-                          deleteProduct.mutate(product.id);
-                        }
+                        setProductToDelete(product);
                       }}
                       className="rounded p-1.5 text-ink-400 hover:bg-signal-50 hover:text-signal-DEFAULT"
                       aria-label="Delete product"
@@ -142,6 +142,56 @@ export function ProductsPage() {
         isSaving={saveProduct.isPending}
         onSave={(product) => saveProduct.mutate(product, { onSuccess: () => setModalProduct(undefined) })}
       />
+
+        <Modal
+          isOpen={productToDelete !== null}
+          onClose={() => {
+            if (!deleteProduct.isPending) {
+              setProductToDelete(null);
+            }
+          }}
+          title="Delete product"
+          className="max-w-md"
+          icon={Trash2}
+        >
+        <div className="space-y-5">
+          <p className="text-sm leading-6 text-ink-600">
+            Are you sure you want to delete{" "}
+            <strong className="text-ink-900">
+              {productToDelete?.name}
+            </strong>
+            ? This action cannot be undone.
+          </p>
+
+          <div className="flex items-center justify-end gap-3 border-t border-ink-100 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setProductToDelete(null)}
+              disabled={deleteProduct.isPending}
+            >
+              Cancel
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!productToDelete) return;
+
+                deleteProduct.mutate(productToDelete.id, {
+                  onSuccess: () => {
+                    setProductToDelete(null);
+                  },
+                });
+              }}
+              disabled={deleteProduct.isPending}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {deleteProduct.isPending ? "Deleting..." : "Delete product"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

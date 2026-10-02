@@ -63,7 +63,7 @@ export function Sidebar() {
       await logout.mutateAsync();
       navigate("/login", { replace: true });
     } catch {
-      // Keep the user on the page if logout fails.
+      // The mutation toast explains the failure and the protected route remains active.
     }
   }
 

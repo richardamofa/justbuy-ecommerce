@@ -1,4 +1,4 @@
-import { Button, EmptyState, formatMoney } from "@ecommerce/ui";
+import { Button, EmptyState, formatMoney, useToast } from "@ecommerce/ui";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCartStore, useCartTotals } from "../store/cart";
@@ -7,6 +7,7 @@ export function CartPage() {
   const items = useCartStore((s) => s.items);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
+  const { success } = useToast();
   const { subtotal } = useCartTotals();
 
   if (items.length === 0) {
@@ -58,7 +59,7 @@ export function CartPage() {
                 <span className="text-sm text-ink-900">{formatMoney(item.unitPrice * item.quantity)}</span>
               </div>
             </div>
-            <button onClick={() => removeItem(item.id)} aria-label={`Delete ${item.name}`} title="Delete item" className="self-start rounded p-1 text-ink-300 transition-colors hover:bg-signal-50 hover:text-signal-DEFAULT">
+            <button onClick={() => { removeItem(item.id); success("Removed from bag", `${item.name} was removed from your bag.`); }} aria-label={`Delete ${item.name}`} title="Delete item" className="self-start rounded p-1 text-ink-300 transition-colors hover:bg-signal-50 hover:text-signal-DEFAULT">
               <Trash2 className="h-4 w-4" />
             </button>
           </li>

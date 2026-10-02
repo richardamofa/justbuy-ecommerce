@@ -28,7 +28,11 @@ export const useCartStore = create<CartState>()(
       addItem: (product, variant, quantity = 1) => {
         const id = lineId(product.id, variant?.id);
         const existing = get().items.find((i) => i.id === id);
-        const unitPrice = variant?.price ?? getEffectivePrice(product);
+        const unitPrice = variant
+          ? variant.salePrice != null && (variant.price == null || variant.salePrice < variant.price)
+            ? variant.salePrice
+            : variant.price ?? getEffectivePrice(product)
+          : getEffectivePrice(product);
 
         if (existing) {
           set({

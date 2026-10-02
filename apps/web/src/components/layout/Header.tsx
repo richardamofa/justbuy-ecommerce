@@ -6,7 +6,7 @@ import { useCategories } from "../../hooks/queries";
 import { useCartStore, useCartTotals } from "../../store/cart";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn("text-sm transition-colors hover:text-moss-500", isActive ? "font-medium text-moss-500" : "text-ink-600");
+  cn("text-sm transition-colors hover:text-moss-900", isActive ? "font-medium text-moss-500" : "text-ink-600");
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
