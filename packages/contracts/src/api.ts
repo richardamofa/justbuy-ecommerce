@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
     addressSchema,
+    adminEventSchema,
     customerSchema,
     orderSchema,
     orderStatusSchema,
@@ -94,9 +95,12 @@ export const orderCreateItemSchema = z.object({
 
 export const orderCreateInputSchema = z.object({
   customerEmail: z.string().email(),
+  customerName: z.string().trim().min(2),
+  customerPhone: z.string().trim().min(6),
   customerId: z.string().nullable().optional(),
   items: z.array(orderCreateItemSchema).min(1),
-  shippingMethod: z.enum(["standard", "express"]).default("standard"),
+  fulfillmentMethod: z.enum(["delivery", "pickup"]).default("delivery"),
+  fulfillmentLocation: z.string().trim().min(1),
   shippingAddress: addressSchema.optional(),
   billingAddress: addressSchema.optional(),
 });
@@ -168,6 +172,16 @@ export const customerListQuerySchema = z.object({
 });
 export type CustomerListQuery = z.infer<typeof customerListQuerySchema>;
 
+export const adminEventListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(50),
+  isResolved: z.coerce.boolean().optional(),
+});
+export type AdminEventListQuery = z.infer<typeof adminEventListQuerySchema>;
+
+export const adminEventListResponseSchema = paginatedSchema(adminEventSchema);
+export const adminEventResolveInputSchema = z.object({ isResolved: z.boolean() });
+
 export const orderResponseSchema = orderSchema;
 export const orderListResponseSchema = paginatedSchema(orderSchema);
 export const customerListResponseSchema = paginatedSchema(customerSchema);
@@ -187,6 +201,8 @@ export const API_ENDPOINTS = {
   adminOrder: (id: string) => `/api/v1/admin/orders/${id}`,
   adminCustomers: "/api/v1/admin/customers",
   adminCustomer: (id: string) => `/api/v1/admin/customers/${id}`,
+  adminEvents: "/api/v1/admin/events",
+  adminEvent: (id: string) => `/api/v1/admin/events/${id}`,
   orderLookup: "/api/v1/orders/lookup",
   paymentInitialize: "/api/v1/payments/initialize",
   paymentVerify: "/api/v1/payments/verify",

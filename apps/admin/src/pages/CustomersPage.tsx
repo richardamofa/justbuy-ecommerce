@@ -1,5 +1,4 @@
-import { EmptyState, formatMoney, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
-import { formatDate, Modal } from "@ecommerce/ui";
+import { EmptyState, formatDate, formatMoney, Modal, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
 import * as React from "react";
 import { AdminLoadError } from "../components/AdminLoadError";
 import { PageHeader } from "../components/PageHeader";
@@ -72,7 +71,7 @@ export function CustomersPage() {
             </section>
             <section>
               <h3 className="mb-2 font-medium text-ink-900">Orders ({selectedCustomer.orders.length})</h3>
-              {selectedCustomer.orders.length ? <ul className="divide-y divide-ink-100 border-y border-ink-100">{selectedCustomer.orders.map((order) => <li key={order.id} className="flex justify-between gap-3 py-3"><span><strong className="font-medium text-ink-900">{order.orderNumber}</strong><br /><span className="text-ink-500">{formatDate(order.createdAt)} · {order.status} · {order.paymentStatus}</span><br /><span className="text-ink-500">{order.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}</span></span><span className="shrink-0">{formatMoney(order.total, order.currency)}</span></li>)}</ul> : <p className="text-ink-400">No orders yet.</p>}
+              {selectedCustomer.orders.length ? <ul className="divide-y divide-ink-100 border-y border-ink-100">{selectedCustomer.orders.map((order) => <li key={order.id} className="flex justify-between gap-3 py-3"><span><strong className="font-medium text-ink-900">{order.orderNumber}</strong><br /><span className="text-ink-500">{formatDate(order.createdAt)} · {order.status} · {order.paymentStatus} · {order.fulfillmentMethod}</span><br /><span className="text-ink-500">{order.fulfillmentLocation}</span><br /><span className="text-ink-500">{order.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}</span></span><span className="shrink-0">{formatMoney(order.total, order.currency)}</span></li>)}</ul> : <p className="text-ink-400">No orders yet.</p>}
             </section>
           </div>
         ) : null}

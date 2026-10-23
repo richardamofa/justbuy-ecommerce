@@ -1,8 +1,8 @@
 import type { CustomerListQuery } from "@ecommerce/contracts";
 import type { Prisma } from "@prisma/client";
 import { HttpError } from "../lib/errors.js";
-import { mapOrder } from "../mappers/order.js";
 import { prisma } from "../lib/prisma.js";
+import { mapOrder } from "../mappers/order.js";
 
 type CustomerForAdmin = Prisma.CustomerGetPayload<{
   include: {
@@ -12,7 +12,7 @@ type CustomerForAdmin = Prisma.CustomerGetPayload<{
 }>;
 
 function mapCustomer(customer: CustomerForAdmin) {
-  const paidOrders = customer.orders.filter((order) => ["paid", "processing", "shipped", "delivered"].includes(order.status));
+  const paidOrders = customer.orders.filter((order) => ["paid", "processing", "shipped", "delivered", "completed"].includes(order.status));
   return {
     id: customer.id,
     firstName: customer.firstName,

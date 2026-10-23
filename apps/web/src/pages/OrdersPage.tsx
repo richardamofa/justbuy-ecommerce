@@ -93,6 +93,8 @@ export function OrdersPage() {
             ))}
           </ul>
           <p className="mt-4 text-right font-medium text-ink-900">Total {formatMoney(order.total, order.currency)}</p>
+          <p className="mt-2 text-right text-sm text-ink-500">{order.fulfillmentMethod === "pickup" ? "Pickup" : "Delivery"}: {order.fulfillmentLocation}</p>
+          {order.fulfillmentMethod === "delivery" && <p className="mt-1 text-right text-sm text-ink-500">Delivery fee {formatMoney(order.deliveryFee, order.currency)}</p>}
           {order.paymentStatus !== "paid" && <Button className="mt-5 w-full sm:w-auto" isLoading={isStartingPayment} onClick={payForOrder}>Retry secure payment</Button>}
         </section>
       )}

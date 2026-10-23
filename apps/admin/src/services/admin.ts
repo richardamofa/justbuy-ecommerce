@@ -1,4 +1,5 @@
 import type {
+    AdminEvent,
     Category,
     Collection,
     Customer,
@@ -161,6 +162,22 @@ export async function getCustomer(id: string): Promise<CustomerDetails> {
 
 export async function getOrder(id: string): Promise<Order> {
   return apiRequest<Order>(`/api/v1/admin/orders/${id}`);
+}
+
+export async function listAdminEvents(query: { isResolved: boolean; page?: number; pageSize?: number }): Promise<PageResponse<AdminEvent>> {
+  const params = new URLSearchParams({
+    isResolved: String(query.isResolved),
+    page: String(query.page ?? 1),
+    pageSize: String(query.pageSize ?? 50),
+  });
+  return apiRequest<PageResponse<AdminEvent>>(`/api/v1/admin/events?${params}`);
+}
+
+export async function setAdminEventResolved(id: string, isResolved: boolean): Promise<AdminEvent> {
+  return apiRequest<AdminEvent>(`/api/v1/admin/events/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ isResolved }),
+  });
 }
 
 /* --------------------------- Homepage sections ------------------------------ */

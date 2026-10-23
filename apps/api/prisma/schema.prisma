@@ -24,8 +24,14 @@ enum OrderStatus {
   processing
   shipped
   delivered
+  completed
   cancelled
   refunded
+}
+
+enum FulfillmentMethod {
+  delivery
+  pickup
 }
 
 enum PaymentStatus {
@@ -38,6 +44,12 @@ enum PaymentAttemptStatus {
   pending
   successful
   failed
+}
+
+enum AdminEventSeverity {
+  info
+  warning
+  error
 }
 
 enum PromotionType {
@@ -229,6 +241,8 @@ model Order {
   items           OrderItem[]
   paymentAttempts PaymentAttempt[]
   status          OrderStatus @default(pending)
+  fulfillmentMethod FulfillmentMethod @default(delivery)
+  fulfillmentLocation String @default("")
   paymentStatus   PaymentStatus @default(pending)
   paymentReference String?
   paidAt          DateTime?
@@ -313,6 +327,7 @@ model StoreSettings {
   socialLinks      Json     @default("{}")
   themeColor       String   @default("#111111")
   shippingFlatRate Decimal  @default(0) @db.Decimal(10, 2)
+  pickupLocations  String[] @default([])
   taxRatePercent   Decimal  @default(0) @db.Decimal(5, 2)
   updatedAt        DateTime @updatedAt
 }
@@ -350,4 +365,21 @@ model NewsletterSubscriber {
   createdAt DateTime @default(now())
 
   @@index([status, createdAt])
+}
+
+model AdminEvent {
+  id         String             @id @default(cuid())
+  severity   AdminEventSeverity
+  source     String
+  title      String
+  message    String
+  entityType String?
+  entityId   String?
+  requestId  String?
+  isResolved Boolean            @default(false)
+  createdAt  DateTime           @default(now())
+  resolvedAt DateTime?
+
+  @@index([isResolved, severity, createdAt])
+  @@index([entityType, entityId])
 }

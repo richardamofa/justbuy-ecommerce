@@ -60,13 +60,34 @@ export const orderStatusSchema = z.enum([
   "processing",
   "shipped",
   "delivered",
+  "completed",
   "cancelled",
   "refunded",
 ]);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
+export const fulfillmentMethodSchema = z.enum(["delivery", "pickup"]);
+export type FulfillmentMethod = z.infer<typeof fulfillmentMethodSchema>;
+
 export const paymentStatusSchema = z.enum(["pending", "paid", "failed"]);
 export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
+
+export const adminEventSeveritySchema = z.enum(["info", "warning", "error"]);
+export type AdminEventSeverity = z.infer<typeof adminEventSeveritySchema>;
+
+export const adminEventSchema = z.object({
+  id: z.string(),
+  severity: adminEventSeveritySchema,
+  source: z.string(),
+  title: z.string(),
+  message: z.string(),
+  entityType: z.string().optional(),
+  entityId: z.string().optional(),
+  isResolved: z.boolean().default(false),
+  createdAt: z.string().datetime(),
+  resolvedAt: z.string().datetime().optional(),
+});
+export type AdminEvent = z.infer<typeof adminEventSchema>;
 
 export const orderItemSchema = z.object({
   id: z.string(),
@@ -88,10 +109,13 @@ export const orderSchema = z.object({
   customerEmail: z.string().email(),
   items: z.array(orderItemSchema),
   status: orderStatusSchema,
+  fulfillmentMethod: fulfillmentMethodSchema.default("delivery"),
+  fulfillmentLocation: z.string().default(""),
   paymentStatus: paymentStatusSchema.default("pending"),
   paymentReference: z.string().optional(),
   paidAt: z.string().datetime().optional(),
   inventoryIssue: z.boolean().default(false),
+  deliveryFee: moneySchema.default(0),
   subtotal: moneySchema,
   shipping: moneySchema.default(0),
   tax: moneySchema.default(0),
@@ -143,7 +167,9 @@ export const storeSettingsSchema = z.object({
     })
     .default({}),
   themeColor: z.string().default("#111111"),
+  deliveryFee: moneySchema.default(0),
   shippingFlatRate: moneySchema.default(0),
+  pickupLocations: z.array(z.string().min(1)).default([]),
   taxRatePercent: z.number().min(0).max(100).default(0),
 });
 export type StoreSettings = z.infer<typeof storeSettingsSchema>;

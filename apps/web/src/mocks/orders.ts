@@ -9,6 +9,9 @@ export const mockOrders: Order[] = [
     orderNumber: "FORM-1001",
     customerEmail: "demo@form-store.example",
     status: "delivered",
+    fulfillmentMethod: "delivery",
+    fulfillmentLocation: "8 Ringway Estate, Accra, Ghana",
+    deliveryFee: 35,
     paymentStatus: "paid",
     inventoryIssue: false,
     items: [
@@ -36,6 +39,9 @@ export const mockOrders: Order[] = [
     orderNumber: "FORM-1002",
     customerEmail: "demo@form-store.example",
     status: "processing",
+    fulfillmentMethod: "delivery",
+    fulfillmentLocation: "12 Oxford Street, Accra, Ghana",
+    deliveryFee: 35,
     paymentStatus: "paid",
     inventoryIssue: false,
     items: [
