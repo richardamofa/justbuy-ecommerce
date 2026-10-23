@@ -69,20 +69,22 @@ export function getSessionCookie(token: string): string {
     `${SESSION_COOKIE}=${token}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${isProduction ? "None" : "Lax"}`,
     `Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}`,
     ...(isProduction ? ["Secure"] : []),
   ].join("; ");
 }
 
 export function getClearSessionCookie(): string {
+  const isProduction = process.env.NODE_ENV === "production";
+
   return [
     `${SESSION_COOKIE}=`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${isProduction ? "None" : "Lax"}`,
     "Max-Age=0",
-    ...(process.env.NODE_ENV === "production" ? ["Secure"] : []),
+    ...(isProduction ? ["Secure"] : []),
   ].join("; ");
 }
 
