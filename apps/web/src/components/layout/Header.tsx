@@ -103,7 +103,7 @@ export function Header() {
               <button
                 type="submit"
                 aria-label="Search"
-                className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-900 text-paper-50 transition-colors hover:bg-moss-600"
+                className="mr-1 ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-900 text-paper-50 transition-colors hover:bg-moss-600"
               >
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>

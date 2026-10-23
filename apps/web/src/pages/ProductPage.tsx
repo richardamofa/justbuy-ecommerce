@@ -1,27 +1,22 @@
-import * as React from "react";
-import { Link, useParams } from "react-router-dom";
+import { getEffectivePrice, isLowStock, isOnSale, isOutOfStock } from "@ecommerce/contracts";
+import {
+    Badge,
+    Button, ErrorState, formatMoney, ProductCard,
+    ProductGallery, Skeleton, useToast
+} from "@ecommerce/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Star } from "lucide-react";
+import * as React from "react";
+import { Link, useParams } from "react-router-dom";
 import { useProduct } from "../hooks/queries";
 import * as productsApi from "../services/products";
-import { getEffectivePrice, isOnSale, isOutOfStock, isLowStock } from "@ecommerce/contracts";
 import { useCartStore } from "../store/cart";
-import { useToast } from "@ecommerce/ui";
-import {
-  Badge,
-  Button,
-  ProductCard,
-  ProductGallery,
-  formatMoney,
-  Skeleton,
-  ErrorState,
-} from "@ecommerce/ui";
 
 export function ProductPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   const { data: product, isLoading, isError } = useProduct(slug);
   const addItem = useCartStore((s) => s.addItem);
-  const { success, warning } = useToast();
+  const { warning } = useToast();
 
   const [selectedOptions, setSelectedOptions] = React.useState<Record<string, string>>({});
   const [quantity, setQuantity] = React.useState(1);
@@ -148,7 +143,6 @@ export function ProductPage() {
                   return;
                 }
                 addItem(product, selectedVariant, quantity);
-                success("Added to bag", `${product.name} is now in your shopping bag.`);
               }}
             >
               {outOfStock ? "Sold out" : "Add to bag"}

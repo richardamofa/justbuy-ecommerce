@@ -2,17 +2,22 @@ import type { Collection } from "@ecommerce/contracts";
 import { Badge, Button, EmptyState, Modal, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
-import { PageHeader } from "../components/PageHeader";
+import { AdminLoadError } from "../components/AdminLoadError";
 import { CollectionFormModal } from "../components/collections/CollectionFormModal";
+import { PageHeader } from "../components/PageHeader";
 import { useAdminCollections, useAdminProducts, useDeleteCollection, useSaveCollection } from "../hooks/queries";
 
 export function CollectionsPage() {
-  const { data: collections = [], isLoading } = useAdminCollections();
-  const { data: products = [] } = useAdminProducts();
+  const { data: collections = [], isLoading, isError: collectionsError, refetch: refetchCollections } = useAdminCollections();
+  const { data: products = [], isError: productsError, refetch: refetchProducts } = useAdminProducts();
   const saveCollection = useSaveCollection();
   const deleteCollection = useDeleteCollection();
   const [modalCollection, setModalCollection] = React.useState<Collection | null | undefined>(undefined);
   const [collectionToDelete, setCollectionToDelete] = React.useState<Collection | null>(null);
+
+  if (collectionsError || productsError) {
+    return <div><PageHeader title="Collections" description="Curated groups of products, independent of the category tree." /><AdminLoadError onRetry={() => { void refetchCollections(); void refetchProducts(); }} /></div>;
+  }
 
   return (
     <div>

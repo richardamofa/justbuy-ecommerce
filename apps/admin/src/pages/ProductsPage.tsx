@@ -1,34 +1,35 @@
 import type { Product } from "@ecommerce/contracts";
 import { getEffectivePrice, isLowStock, isOutOfStock } from "@ecommerce/contracts";
 import {
-  Badge,
-  Button,
-  EmptyState,
-  formatMoney,
-  Input,
-  Modal,
-  Skeleton,
-  Table,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
+    Badge,
+    Button,
+    EmptyState,
+    formatMoney,
+    Input,
+    Modal,
+    Skeleton,
+    Table,
+    Tbody,
+    Td,
+    Th,
+    Thead,
+    Tr,
 } from "@ecommerce/ui";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import * as React from "react";
+import { AdminLoadError } from "../components/AdminLoadError";
 import { PageHeader } from "../components/PageHeader";
 import { ProductFormModal } from "../components/products/ProductFormModal";
 import {
-  useAdminCategories,
-  useAdminProducts,
-  useDeleteProduct,
-  useSaveProduct,
+    useAdminCategories,
+    useAdminProducts,
+    useDeleteProduct,
+    useSaveProduct,
 } from "../hooks/queries";
 
 export function ProductsPage() {
-  const { data: products = [], isLoading } = useAdminProducts();
-  const { data: categories = [] } = useAdminCategories();
+  const { data: products = [], isLoading, isError: productsError, refetch: refetchProducts } = useAdminProducts();
+  const { data: categories = [], isError: categoriesError, refetch: refetchCategories } = useAdminCategories();
   const saveProduct = useSaveProduct();
   const deleteProduct = useDeleteProduct();
 
@@ -38,6 +39,10 @@ export function ProductsPage() {
 
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
   const categoryName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "—";
+
+  if (productsError || categoriesError) {
+    return <div><PageHeader title="Products" description="Manage the product catalog." /><AdminLoadError onRetry={() => { void refetchProducts(); void refetchCategories(); }} /></div>;
+  }
 
   return (
     <div>

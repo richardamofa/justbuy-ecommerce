@@ -1,10 +1,11 @@
+import { isLowStock, isOutOfStock } from "@ecommerce/contracts";
+import { Badge, Card, CardContent, formatMoney, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
+import { AlertTriangle, Package, ShoppingCart, Users } from "lucide-react";
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Package, ShoppingCart, Users } from "lucide-react";
-import { useAdminOrders, useAdminProducts, useAdminCustomers } from "../hooks/queries";
-import { isLowStock, isOutOfStock } from "@ecommerce/contracts";
-import { Card, CardContent, Badge, Table, Thead, Tbody, Tr, Th, Td, formatMoney, Skeleton } from "@ecommerce/ui";
+import { AdminLoadError } from "../components/AdminLoadError";
 import { PageHeader } from "../components/PageHeader";
+import { useAdminCustomers, useAdminOrders, useAdminProducts } from "../hooks/queries";
 
 const statusTone = {
   pending: "neutral",
@@ -33,19 +34,25 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Package; label: s
 }
 
 export function DashboardPage() {
-  const { data: orders = [], isLoading: loadingOrders } = useAdminOrders();
-  const { data: products = [], isLoading: loadingProducts } = useAdminProducts();
-  const { data: customers = [] } = useAdminCustomers();
+  const { data: orders = [], isLoading: loadingOrders, isError: ordersError, refetch: refetchOrders } = useAdminOrders();
+  const { data: products = [], isLoading: loadingProducts, isError: productsError, refetch: refetchProducts } = useAdminProducts();
+  const { data: customers = [], isLoading: loadingCustomers, isError: customersError, refetch: refetchCustomers } = useAdminCustomers();
 
-  const revenue = orders.reduce((sum, o) => sum + o.total, 0);
+  const revenue = orders
+    .filter((order) => ["paid", "processing", "shipped", "delivered"].includes(order.status))
+    .reduce((sum, order) => sum + order.total, 0);
   const lowStockProducts = products.filter((p) => isLowStock(p) || isOutOfStock(p));
   const recentOrders = [...orders].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)).slice(0, 5);
+
+  if (ordersError || productsError || customersError) {
+    return <div><PageHeader title="Dashboard" description="An overview of the store." /><AdminLoadError onRetry={() => { void refetchOrders(); void refetchProducts(); void refetchCustomers(); }} /></div>;
+  }
 
   return (
     <div>
       <PageHeader title="Dashboard" description="An overview of the store." />
 
-      {loadingOrders || loadingProducts ? (
+      {loadingOrders || loadingProducts || loadingCustomers ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full" />
@@ -79,6 +86,7 @@ export function DashboardPage() {
                 </Tr>
               </Thead>
               <Tbody>
+                {recentOrders.length === 0 && <Tr><Td colSpan={4} className="py-8 text-center text-ink-400">No orders yet.</Td></Tr>}
                 {recentOrders.map((order) => (
                   <Tr key={order.id}>
                     <Td className="font-medium text-ink-900">{order.orderNumber}</Td>

@@ -386,3 +386,21 @@ export async function deleteCollection(id: string) {
 
   return { id };
 }
+
+export async function listAdminCategories() {
+  const categories = await prisma.category.findMany({
+    orderBy: [{ position: "asc" }, { name: "asc" }],
+    include: categoryInclude,
+  });
+
+  return categories.map(mapCategory);
+}
+
+export async function listAdminCollections() {
+  const collections = await prisma.collection.findMany({
+    orderBy: { name: "asc" },
+    include: collectionInclude,
+  });
+
+  return collections.map(mapCollection);
+}

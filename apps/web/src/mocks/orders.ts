@@ -9,6 +9,8 @@ export const mockOrders: Order[] = [
     orderNumber: "FORM-1001",
     customerEmail: "demo@form-store.example",
     status: "delivered",
+    paymentStatus: "paid",
+    inventoryIssue: false,
     items: [
       {
         id: "item_1",
@@ -34,6 +36,8 @@ export const mockOrders: Order[] = [
     orderNumber: "FORM-1002",
     customerEmail: "demo@form-store.example",
     status: "processing",
+    paymentStatus: "paid",
+    inventoryIssue: false,
     items: [
       {
         id: "item_2",

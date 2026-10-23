@@ -99,6 +99,10 @@ export function mapOrder(
     })),
 
     status: order.status,
+    paymentStatus: order.paymentStatus,
+    ...(order.paymentReference ? { paymentReference: order.paymentReference } : {}),
+    ...(order.paidAt ? { paidAt: order.paidAt.toISOString() } : {}),
+    inventoryIssue: order.inventoryIssue,
 
     subtotal: Number(order.subtotal),
     shipping: Number(order.shipping),

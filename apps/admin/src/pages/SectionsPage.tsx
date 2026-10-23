@@ -1,23 +1,24 @@
 import type { HomepageSection } from "@ecommerce/contracts";
 import {
-  Button,
-  Card,
-  CardContent,
-  Modal,
-  Select,
-  Skeleton,
-  useToast,
+    Button,
+    Card,
+    CardContent,
+    Modal,
+    Select,
+    Skeleton,
+    useToast,
 } from "@ecommerce/ui";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
 
+import { AdminLoadError } from "../components/AdminLoadError";
 import { PageHeader } from "../components/PageHeader";
 import { SectionEditModal } from "../components/sections/SectionEditModal";
 import {
-  useAdminCategories,
-  useAdminProducts,
-  useAdminSections,
-  useSaveSections,
+    useAdminCategories,
+    useAdminProducts,
+    useAdminSections,
+    useSaveSections,
 } from "../hooks/queries";
 import { sectionTypeLabels } from "../mocks/homepage";
 
@@ -106,9 +107,9 @@ function createDefaultSection(
 export function SectionsPage() {
   const { toast } = useToast();
 
-  const { data: sections = [], isLoading } = useAdminSections();
-  const { data: products = [] } = useAdminProducts();
-  const { data: categories = [] } = useAdminCategories();
+  const { data: sections = [], isLoading, isError: sectionsError, refetch: refetchSections } = useAdminSections();
+  const { data: products = [], isError: productsError, refetch: refetchProducts } = useAdminProducts();
+  const { data: categories = [], isError: categoriesError, refetch: refetchCategories } = useAdminCategories();
   const saveSections = useSaveSections();
 
   const [local, setLocal] = React.useState<HomepageSection[] | null>(null);
@@ -125,6 +126,10 @@ export function SectionsPage() {
   }, [sections, local]);
 
   const list = local ?? sections;
+
+  if (sectionsError || productsError || categoriesError) {
+    return <div><PageHeader title="Homepage sections" description="Control what appears on the storefront homepage, and in what order." /><AdminLoadError onRetry={() => { void refetchSections(); void refetchProducts(); void refetchCategories(); }} /></div>;
+  }
 
   function persist(
     next: HomepageSection[],

@@ -2,18 +2,23 @@ import type { Category } from "@ecommerce/contracts";
 import { Badge, Button, EmptyState, Modal, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from "@ecommerce/ui";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
-import { PageHeader } from "../components/PageHeader";
+import { AdminLoadError } from "../components/AdminLoadError";
 import { CategoryFormModal } from "../components/categories/CategoryFormModal";
+import { PageHeader } from "../components/PageHeader";
 import { useAdminCategories, useDeleteCategory, useSaveCategory } from "../hooks/queries";
 
 export function CategoriesPage() {
-  const { data: categories = [], isLoading } = useAdminCategories();
+  const { data: categories = [], isLoading, isError, refetch } = useAdminCategories();
   const saveCategory = useSaveCategory();
   const deleteCategory = useDeleteCategory();
   const [modalCategory, setModalCategory] = React.useState<Category | null | undefined>(undefined);
   const [categoryToDelete, setCategoryToDelete] = React.useState<Category | null>(null);
 
   const parentName = (id: string | null) => (id ? categories.find((c) => c.id === id)?.name ?? "—" : "—");
+
+  if (isError) {
+    return <div><PageHeader title="Categories" description="The permanent store taxonomy." /><AdminLoadError onRetry={() => { void refetch(); }} /></div>;
+  }
 
   return (
     <div>
@@ -92,9 +97,18 @@ export function CategoriesPage() {
       <Modal isOpen={categoryToDelete !== null} onClose={() => !deleteCategory.isPending && setCategoryToDelete(null)} title="Delete category">
         <div className="space-y-5">
           <p className="text-sm leading-6 text-ink-600">Delete <strong className="text-ink-900">{categoryToDelete?.name}</strong>? This action cannot be undone.</p>
-          <div className="flex justify-end gap-2 border-t border-ink-100 pt-4">
-            <Button variant="outline" onClick={() => setCategoryToDelete(null)} disabled={deleteCategory.isPending}>Cancel</Button>
-            <Button variant="danger" isLoading={deleteCategory.isPending} onClick={() => categoryToDelete && deleteCategory.mutate(categoryToDelete.id, { onSuccess: () => setCategoryToDelete(null) })}>Delete category</Button>
+          <div className="flex flex-col-reverse gap-3 border-t border-ink-100 pt-4 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setCategoryToDelete(null)} disabled={deleteCategory.isPending}>Cancel</Button>
+            <Button
+              type="button"
+              variant="danger"
+              className="w-full min-w-[148px] shrink-0 !bg-red-600 !text-white hover:!bg-red-700 sm:w-auto"
+              isLoading={deleteCategory.isPending}
+              onClick={() => categoryToDelete && deleteCategory.mutate(categoryToDelete.id, { onSuccess: () => setCategoryToDelete(null) })}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Delete category
+            </Button>
           </div>
         </div>
       </Modal>

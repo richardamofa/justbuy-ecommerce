@@ -1,12 +1,14 @@
 import type {
     OrderCreateInput,
     OrderListQuery,
+    OrderLookupInput,
     OrderStatusUpdateInput,
 } from "@ecommerce/contracts";
 
 import {
     orderCreateInputSchema,
     orderListQuerySchema,
+    orderLookupInputSchema,
     orderStatusUpdateInputSchema,
 } from "@ecommerce/contracts";
 
@@ -23,6 +25,11 @@ import { requireAdmin } from "../lib/require-admin.js";
 import * as orderService from "../services/order.service.js";
 
 export async function registerOrderRoutes(app: FastifyInstance) {
+  app.post("/orders/lookup", async (request) => {
+    const input = parseBody<OrderLookupInput>(request, orderLookupInputSchema);
+    return orderService.getOrderByNumberAndEmail(input);
+  });
+
   // Public: create an order
   app.post("/orders", async (request, reply) => {
     const input = parseBody<OrderCreateInput>(
@@ -36,7 +43,7 @@ export async function registerOrderRoutes(app: FastifyInstance) {
   });
 
   // Public: get an order
-  app.get("/orders/:id", async (request) => {
+  app.get("/orders/:id", { preHandler: requireAdmin }, async (request) => {
     const { id } = parseParams<{ id: string }>(
       request,
       idParamsSchema,

@@ -83,6 +83,7 @@ async function main() {
       name: "Fashion",
       slug: "fashion",
       description: "Clothing, accessories, and everyday style.",
+      imageUrl: image("photo-1445205170230-053b83016050"),
       position: 0,
       isVisible: true,
       seoTitle: "Fashion | JustBuy",
@@ -96,6 +97,7 @@ async function main() {
       name: "Electronics",
       slug: "electronics",
       description: "Everyday technology, devices, and accessories.",
+      imageUrl: image("photo-1498049794561-7780e7231661"),
       position: 1,
       isVisible: true,
       seoTitle: "Electronics | JustBuy",
@@ -109,6 +111,7 @@ async function main() {
       name: "Beauty",
       slug: "beauty",
       description: "Skincare, haircare, and everyday beauty essentials.",
+      imageUrl: image("photo-1556228578-8c89e6adf883"),
       position: 2,
       isVisible: true,
       seoTitle: "Beauty | JustBuy",
@@ -122,6 +125,7 @@ async function main() {
       name: "Home & Living",
       slug: "home-living",
       description: "Furniture, decor, and essentials for your home.",
+      imageUrl: image("photo-1618220179428-22790b461013"),
       position: 3,
       isVisible: true,
       seoTitle: "Home & Living | JustBuy",
@@ -640,6 +644,64 @@ async function main() {
         },
       },
     }),
+
+    prisma.product.create({
+      data: {
+        name: "Handwoven Market Tote",
+        slug: "handwoven-market-tote",
+        description:
+          "A roomy everyday tote made from sturdy cotton canvas with handwoven handles. The 38 × 34 × 12 cm body fits a light jacket, groceries, or a 13-inch laptop. Choose Natural or Olive. Spot clean with a damp cloth and air dry. Each piece is finished in small batches, so subtle weave variations are part of its character.",
+        shortDescription: "Small-batch canvas tote with handwoven handles.",
+        price: new Prisma.Decimal("260.00"),
+        currency: "GHS",
+        sku: "JB-ACC-TOT-001",
+        categoryId: accessories.id,
+        tags: ["accessories", "bags", "canvas", "handwoven", "everyday"],
+        stock: 30,
+        lowStockThreshold: 5,
+        trackInventory: true,
+        isFeatured: true,
+        isBestSeller: true,
+        isNewArrival: true,
+        visibility: "visible",
+        seoTitle: "Handwoven Market Tote | JustBuy",
+        seoDescription: "A durable small-batch cotton canvas tote in Natural or Olive.",
+        images: {
+          create: [
+            {
+              url: image("photo-1590874103328-eac38a683ce7"),
+              alt: "Handwoven market tote in natural canvas",
+              position: 0,
+            },
+            {
+              url: image("photo-1553062407-98eeb64c6a62"),
+              alt: "Market tote shown with everyday essentials",
+              position: 1,
+            },
+          ],
+        },
+        options: {
+          create: [{ name: "Color", values: ["Natural", "Olive"] }],
+        },
+        variants: {
+          create: [
+            {
+              sku: "JB-ACC-TOT-001-NAT",
+              options: { Color: "Natural" },
+              stock: 18,
+              imageUrl: image("photo-1590874103328-eac38a683ce7"),
+              isDefault: true,
+            },
+            {
+              sku: "JB-ACC-TOT-001-OLV",
+              options: { Color: "Olive" },
+              stock: 12,
+              imageUrl: image("photo-1553062407-98eeb64c6a62"),
+            },
+          ],
+        },
+      },
+    }),
   ]);
 
   /*
@@ -655,6 +717,7 @@ async function main() {
     serum,
     loungeChair,
     tableLamp,
+    marketTote,
   ] = products;
 
   await prisma.productCollection.createMany({
@@ -697,6 +760,10 @@ async function main() {
       },
       {
         productId: loungeChair.id,
+        collectionId: staffPicks.id,
+      },
+      {
+        productId: marketTote.id,
         collectionId: staffPicks.id,
       },
     ],
