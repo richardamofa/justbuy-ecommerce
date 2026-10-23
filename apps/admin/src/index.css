@@ -12,7 +12,7 @@ h1, h2, h3, .font-display {
 }
 
 :focus-visible {
-  outline: 2px solid theme("colors.moss.500");
+  outline: 2px solid var(--color-moss-500, #22c55e);
   outline-offset: 2px;
 }
 
