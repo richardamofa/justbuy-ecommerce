@@ -9,6 +9,7 @@ import { CartPage } from "./pages/CartPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
 import { AccountPage } from "./pages/AccountPage";
 import { OrdersPage } from "./pages/OrdersPage";
+import { PaymentReturnPage } from "./pages/PaymentReturnPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/collections/:slug" element={<CollectionPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/payment/verify" element={<PaymentReturnPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="*" element={<NotFoundPage />} />

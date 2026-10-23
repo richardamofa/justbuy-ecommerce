@@ -13,6 +13,7 @@ import {
 } from "@ecommerce/contracts";
 
 import type { FastifyInstance } from "fastify";
+import { requireAdmin } from "../lib/require-admin.js";
 
 import {
     idParamsSchema,
@@ -24,6 +25,14 @@ import {
 import * as taxonomyService from "../services/taxonomy.service.js";
 
 export async function registerTaxonomyRoutes(app: FastifyInstance) {
+  app.get("/admin/categories", { preHandler: requireAdmin }, async () =>
+    taxonomyService.listAdminCategories(),
+  );
+
+  app.get("/admin/collections", { preHandler: requireAdmin }, async () =>
+    taxonomyService.listAdminCollections(),
+  );
+
   app.get("/categories", async () => {
     return taxonomyService.listCategories();
   });
@@ -37,7 +46,7 @@ export async function registerTaxonomyRoutes(app: FastifyInstance) {
     return taxonomyService.getCategoryBySlug(slug);
   });
 
-  app.post("/categories", async (request, reply) => {
+  app.post("/categories", { preHandler: requireAdmin }, async (request, reply) => {
     const input = parseBody<CategoryCreateInput>(
       request,
       categoryCreateInputSchema,
@@ -49,7 +58,7 @@ export async function registerTaxonomyRoutes(app: FastifyInstance) {
     return reply.status(201).send(category);
   });
 
-  app.patch("/categories/:id", async (request) => {
+  app.patch("/categories/:id", { preHandler: requireAdmin }, async (request) => {
     const { id } = parseParams<{ id: string }>(
       request,
       idParamsSchema,
@@ -63,7 +72,7 @@ export async function registerTaxonomyRoutes(app: FastifyInstance) {
     return taxonomyService.updateCategory(id, input);
   });
 
-  app.delete("/categories/:id", async (request) => {
+  app.delete("/categories/:id", { preHandler: requireAdmin }, async (request) => {
     const { id } = parseParams<{ id: string }>(
       request,
       idParamsSchema,
@@ -85,7 +94,7 @@ export async function registerTaxonomyRoutes(app: FastifyInstance) {
     return taxonomyService.getCollectionBySlug(slug);
   });
 
-  app.post("/collections", async (request, reply) => {
+  app.post("/collections", { preHandler: requireAdmin }, async (request, reply) => {
     const input = parseBody<CollectionCreateInput>(
       request,
       collectionCreateInputSchema,
@@ -97,7 +106,7 @@ export async function registerTaxonomyRoutes(app: FastifyInstance) {
     return reply.status(201).send(collection);
   });
 
-  app.patch("/collections/:id", async (request) => {
+  app.patch("/collections/:id", { preHandler: requireAdmin }, async (request) => {
     const { id } = parseParams<{ id: string }>(
       request,
       idParamsSchema,
@@ -111,7 +120,7 @@ export async function registerTaxonomyRoutes(app: FastifyInstance) {
     return taxonomyService.updateCollection(id, input);
   });
 
-  app.delete("/collections/:id", async (request) => {
+  app.delete("/collections/:id", { preHandler: requireAdmin }, async (request) => {
     const { id } = parseParams<{ id: string }>(
       request,
       idParamsSchema,

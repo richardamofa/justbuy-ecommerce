@@ -1,13 +1,16 @@
 import cors from "@fastify/cors";
 import Fastify, {
-  type FastifyInstance,
+    type FastifyInstance,
 } from "fastify";
 
 import { loadConfig, type AppConfig } from "./config/env.js";
 import { errorFromUnknown } from "./lib/errors.js";
 import { registerAdminAuthRoutes } from "./routes/admin-auth.js";
+import { registerCustomerRoutes } from "./routes/customers.js";
 import { registerHomepageRoutes } from "./routes/homepage.js";
+import { registerNewsletterRoutes } from "./routes/newsletter.js";
 import { registerOrderRoutes } from "./routes/order.js";
+import { registerPaymentRoutes } from "./routes/payments.js";
 import { registerProductRoutes } from "./routes/products.js";
 import { registerStoreRoutes } from "./routes/store.js";
 import { registerTaxonomyRoutes } from "./routes/taxonomy.js";
@@ -20,13 +23,10 @@ export async function buildApp(
     bodyLimit: 1_048_576,
   });
 
-    await app.register(cors, {
-      origin: [
-        "http://localhost:5173",
-        "http://localhost:5174",
-      ],
-      credentials: true,
-    });
+  await app.register(cors, {
+    origin: config.CORS_ORIGIN,
+    credentials: true,
+  });
 
   app.setErrorHandler(
     async (error, request, reply) => {
@@ -88,6 +88,18 @@ export async function buildApp(
       prefix: "/api/v1",
     },
   );
+
+  await app.register(registerCustomerRoutes, {
+    prefix: "/api/v1",
+  });
+
+  await app.register(registerNewsletterRoutes, {
+    prefix: "/api/v1",
+  });
+
+  await app.register(registerPaymentRoutes, {
+    prefix: "/api/v1",
+  });
 
   await app.register(registerAdminAuthRoutes, {
     prefix: "/api/v1",

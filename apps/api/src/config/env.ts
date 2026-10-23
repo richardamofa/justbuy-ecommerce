@@ -12,6 +12,12 @@ const envSchema = z.object({
       (value) => (typeof value === "string" ? value.split(",").map((origin) => origin.trim()).filter(Boolean) : value),
       z.array(z.string().url()).default(["http://localhost:5173", "http://localhost:5174"])
     ),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_AUDIENCE_ID: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
+  ADMIN_NOTIFICATION_EMAIL: z.string().email().optional(),
+  PAYSTACK_SECRET_KEY: z.string().optional(),
+  PAYSTACK_CALLBACK_URL: z.string().url().optional(),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;

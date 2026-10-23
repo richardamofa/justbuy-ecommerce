@@ -1,9 +1,9 @@
 import type { ApiErrorCode } from "@ecommerce/contracts";
 import {
-  PrismaClientInitializationError,
-  PrismaClientKnownRequestError,
-  PrismaClientUnknownRequestError,
-  PrismaClientValidationError,
+    PrismaClientInitializationError,
+    PrismaClientKnownRequestError,
+    PrismaClientUnknownRequestError,
+    PrismaClientValidationError,
 } from "@prisma/client/runtime/library";
 import { ZodError } from "zod";
 
@@ -39,7 +39,7 @@ export class HttpError extends Error {
 static unauthorized(message = "Unauthorized.") {
   return new HttpError(
     401,
-    "internal_error",
+    "unauthorized",
     message,
   );
 }

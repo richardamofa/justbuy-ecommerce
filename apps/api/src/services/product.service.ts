@@ -1,7 +1,7 @@
 import type {
-  ProductCreateInput,
-  ProductListQuery,
-  ProductUpdateInput,
+    ProductCreateInput,
+    ProductListQuery,
+    ProductUpdateInput,
 } from "@ecommerce/contracts";
 import { Prisma } from "@prisma/client";
 import { HttpError } from "../lib/errors.js";
@@ -92,10 +92,10 @@ function productCreateData(
   };
 }
 
-export async function listProducts(query: ProductListQuery) {
-  const where: Prisma.ProductWhereInput = {
-    visibility: "visible",
-  };
+export async function listProducts(query: ProductListQuery, includeHidden = false) {
+  const where: Prisma.ProductWhereInput = includeHidden
+    ? {}
+    : { visibility: "visible" };
 
   if (query.categorySlug) {
     where.category = {

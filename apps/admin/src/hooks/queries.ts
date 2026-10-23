@@ -230,6 +230,14 @@ export function useAdminOrders() {
   });
 }
 
+export function useAdminOrder(id: string | null) {
+  return useQuery({
+    queryKey: ["admin", "orders", id],
+    queryFn: () => api.getOrder(id!),
+    enabled: Boolean(id),
+  });
+}
+
 export function useUpdateOrderStatus() {
   const qc = useQueryClient();
   const { success, error } = useToast();
@@ -270,6 +278,14 @@ export function useAdminCustomers() {
   return useQuery({
     queryKey: ["admin", "customers"],
     queryFn: api.listCustomers,
+  });
+}
+
+export function useAdminCustomer(id: string | null) {
+  return useQuery({
+    queryKey: ["admin", "customers", id],
+    queryFn: () => api.getCustomer(id!),
+    enabled: Boolean(id),
   });
 }
 

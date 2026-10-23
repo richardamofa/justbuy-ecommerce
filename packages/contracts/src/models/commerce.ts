@@ -65,6 +65,9 @@ export const orderStatusSchema = z.enum([
 ]);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
+export const paymentStatusSchema = z.enum(["pending", "paid", "failed"]);
+export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
+
 export const orderItemSchema = z.object({
   id: z.string(),
   productId: z.string(),
@@ -85,6 +88,10 @@ export const orderSchema = z.object({
   customerEmail: z.string().email(),
   items: z.array(orderItemSchema),
   status: orderStatusSchema,
+  paymentStatus: paymentStatusSchema.default("pending"),
+  paymentReference: z.string().optional(),
+  paidAt: z.string().datetime().optional(),
+  inventoryIssue: z.boolean().default(false),
   subtotal: moneySchema,
   shipping: moneySchema.default(0),
   tax: moneySchema.default(0),

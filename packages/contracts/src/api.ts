@@ -1,8 +1,10 @@
 import { z } from "zod";
 import {
-  orderSchema,
-  orderStatusSchema,
-  storeSettingsSchema,
+    addressSchema,
+    customerSchema,
+    orderSchema,
+    orderStatusSchema,
+    storeSettingsSchema,
 } from "./models/commerce.js";
 import { homepageConfigSchema } from "./models/homepage.js";
 import { productSchema } from "./models/product.js";
@@ -14,6 +16,7 @@ export const apiErrorCodeSchema = z.enum([
   "validation_error",
   "not_found",
   "conflict",
+  "unauthorized",
   "database_error",
   "not_implemented",
   "internal_error",
@@ -93,11 +96,54 @@ export const orderCreateInputSchema = z.object({
   customerEmail: z.string().email(),
   customerId: z.string().nullable().optional(),
   items: z.array(orderCreateItemSchema).min(1),
-  shippingAddress: z.record(z.string(), z.unknown()).optional(),
-  billingAddress: z.record(z.string(), z.unknown()).optional(),
+  shippingMethod: z.enum(["standard", "express"]).default("standard"),
+  shippingAddress: addressSchema.optional(),
+  billingAddress: addressSchema.optional(),
 });
 
 export type OrderCreateInput = z.infer<typeof orderCreateInputSchema>;
+
+export const orderLookupInputSchema = z.object({
+  orderNumber: z.string().trim().toUpperCase().min(1),
+  customerEmail: z.string().trim().email(),
+});
+export type OrderLookupInput = z.infer<typeof orderLookupInputSchema>;
+
+export const paymentInitializeInputSchema = z.object({
+  orderId: z.string().min(1),
+  customerEmail: z.string().trim().email(),
+});
+export type PaymentInitializeInput = z.infer<typeof paymentInitializeInputSchema>;
+
+export const paymentInitializeResponseSchema = z.discriminatedUnion("available", [
+  z.object({
+    available: z.literal(true),
+    authorizationUrl: z.string().url(),
+    reference: z.string(),
+  }),
+  z.object({ available: z.literal(false) }),
+]);
+
+export const paymentVerifyInputSchema = z.object({
+  reference: z.string().min(1),
+});
+export type PaymentVerifyInput = z.infer<typeof paymentVerifyInputSchema>;
+
+export const paymentVerificationResponseSchema = z.object({
+  status: z.enum(["paid", "failed", "pending"]),
+  order: orderSchema,
+  customerEmailSent: z.boolean().optional(),
+});
+
+export const customerDetailsSchema = customerSchema.extend({
+  orders: z.array(orderSchema),
+});
+export type CustomerDetails = z.infer<typeof customerDetailsSchema>;
+
+export const newsletterSubscribeInputSchema = z.object({
+  email: z.string().trim().email(),
+});
+export type NewsletterSubscribeInput = z.infer<typeof newsletterSubscribeInputSchema>;
 
 export const orderStatusUpdateInputSchema = z.object({
   status: orderStatusSchema,
@@ -116,8 +162,15 @@ export const orderListQuerySchema = z.object({
 
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;
 
+export const customerListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(25),
+});
+export type CustomerListQuery = z.infer<typeof customerListQuerySchema>;
+
 export const orderResponseSchema = orderSchema;
 export const orderListResponseSchema = paginatedSchema(orderSchema);
+export const customerListResponseSchema = paginatedSchema(customerSchema);
 
 export const API_ENDPOINTS = {
   products: "/api/v1/products",
@@ -132,5 +185,11 @@ export const API_ENDPOINTS = {
   order: (id: string) => `/api/v1/orders/${id}`,
   adminOrders: "/api/v1/admin/orders",
   adminOrder: (id: string) => `/api/v1/admin/orders/${id}`,
+  adminCustomers: "/api/v1/admin/customers",
+  adminCustomer: (id: string) => `/api/v1/admin/customers/${id}`,
+  orderLookup: "/api/v1/orders/lookup",
+  paymentInitialize: "/api/v1/payments/initialize",
+  paymentVerify: "/api/v1/payments/verify",
+  newsletterSubscribe: "/api/v1/newsletter/subscribe",
 } as const;
 

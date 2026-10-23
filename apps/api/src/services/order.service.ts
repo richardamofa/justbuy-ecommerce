@@ -1,9 +1,11 @@
 import type {
     OrderCreateInput,
     OrderListQuery,
+    OrderLookupInput,
     OrderStatusUpdateInput,
 } from "@ecommerce/contracts";
 import { Prisma } from "@prisma/client";
+import { randomBytes } from "node:crypto";
 
 import { HttpError } from "../lib/errors.js";
 import { prisma } from "../lib/prisma.js";
@@ -14,10 +16,7 @@ function generateOrderNumber(): string {
     .toString(36)
     .toUpperCase();
 
-  const random = Math.random()
-    .toString(36)
-    .slice(2, 7)
-    .toUpperCase();
+  const random = randomBytes(6).toString("hex").toUpperCase();
 
   return `ORD-${timestamp}-${random}`;
 }
@@ -63,6 +62,7 @@ function decimalMultiply(
 export async function createOrder(
   input: OrderCreateInput,
 ) {
+  const customerEmail = input.customerEmail.trim().toLowerCase();
   const productIds = [
     ...new Set(
       input.items.map((item) => item.productId),
@@ -222,11 +222,14 @@ export async function createOrder(
       },
     });
 
-  const shipping = settings?.shippingFlatRate
+  const shippingRate = settings?.shippingFlatRate
     ? new Prisma.Decimal(
         settings.shippingFlatRate,
       )
     : new Prisma.Decimal(0);
+  const shipping = input.shippingMethod === "express"
+    ? shippingRate.mul(2)
+    : shippingRate;
 
   const taxRate = settings?.taxRatePercent
     ? new Prisma.Decimal(
@@ -255,24 +258,70 @@ export async function createOrder(
   const order =
     await prisma.$transaction(
       async (tx) => {
+        const customerName = input.shippingAddress?.fullName.trim().split(/\s+/) ?? [];
+        const customer = await tx.customer.upsert({
+          where: { email: customerEmail },
+          create: {
+            email: customerEmail,
+            firstName: customerName[0] ?? "Customer",
+            lastName: customerName.slice(1).join(" "),
+            phone: input.shippingAddress?.phone,
+          },
+          update: {
+            ...(customerName.length
+              ? {
+                  firstName: customerName[0],
+                  lastName: customerName.slice(1).join(" "),
+                }
+              : {}),
+            ...(input.shippingAddress?.phone
+              ? { phone: input.shippingAddress.phone }
+              : {}),
+          },
+        });
+
+        if (input.shippingAddress) {
+          const addressInput = input.shippingAddress;
+          const existingAddress = await tx.address.findFirst({
+            where: {
+              customerId: customer.id,
+              line1: addressInput.line1,
+              city: addressInput.city,
+              country: addressInput.country,
+              postalCode: addressInput.postalCode ?? null,
+            },
+          });
+
+          if (!existingAddress) {
+            const hasDefaultAddress = await tx.address.count({
+              where: { customerId: customer.id, isDefault: true },
+            });
+            await tx.address.create({
+              data: {
+                customerId: customer.id,
+                fullName: addressInput.fullName,
+                phone: addressInput.phone,
+                line1: addressInput.line1,
+                line2: addressInput.line2,
+                city: addressInput.city,
+                region: addressInput.region,
+                country: addressInput.country,
+                postalCode: addressInput.postalCode,
+                isDefault: hasDefaultAddress === 0,
+              },
+            });
+          }
+        }
+
         const created =
           await tx.order.create({
             data: {
               orderNumber:
                 generateOrderNumber(),
 
-              ...(input.customerId
-                ? {
-                    customer: {
-                      connect: {
-                        id: input.customerId,
-                      },
-                    },
-                  }
-                : {}),
+              customer: { connect: { id: customer.id } },
 
-              customerEmail:
-                input.customerEmail,
+              customerEmail,
 
               status: "pending",
 
@@ -331,50 +380,6 @@ export async function createOrder(
               items: true,
             },
           });
-
-        for (const item of input.items) {
-          const product =
-            productMap.get(
-              item.productId,
-            );
-
-          if (
-            !product ||
-            !product.trackInventory
-          ) {
-            continue;
-          }
-
-          if (item.variantId) {
-            await tx.productVariant.update(
-              {
-                where: {
-                  id: item.variantId,
-                },
-
-                data: {
-                  stock: {
-                    decrement:
-                      item.quantity,
-                  },
-                },
-              },
-            );
-          } else {
-            await tx.product.update({
-              where: {
-                id: item.productId,
-              },
-
-              data: {
-                stock: {
-                  decrement:
-                    item.quantity,
-                },
-              },
-            });
-          }
-        }
 
         return created;
       },
@@ -492,6 +497,16 @@ export async function updateOrderStatus(
     );
   }
 
+  if (input.status === "paid" && existing.paymentStatus !== "paid") {
+    throw HttpError.conflict("An order can only be marked paid after provider verification.");
+  }
+  if (["processing", "shipped", "delivered"].includes(input.status) && existing.paymentStatus !== "paid") {
+    throw HttpError.conflict("Payment must be verified before fulfilment can advance.");
+  }
+  if (existing.paymentStatus === "paid" && input.status === "pending") {
+    throw HttpError.conflict("A paid order cannot return to pending.");
+  }
+
   const order =
     await prisma.order.update({
       where: {
@@ -506,6 +521,27 @@ export async function updateOrderStatus(
         items: true,
       },
     });
+
+  return mapOrder(order);
+}
+
+export async function getOrderByNumberAndEmail(
+  input: OrderLookupInput,
+) {
+  const order = await prisma.order.findFirst({
+    where: {
+      orderNumber: input.orderNumber,
+      customerEmail: {
+        equals: input.customerEmail.trim(),
+        mode: "insensitive",
+      },
+    },
+    include: { items: true },
+  });
+
+  if (!order) {
+    throw HttpError.notFound("No order matched that number and email.");
+  }
 
   return mapOrder(order);
 }

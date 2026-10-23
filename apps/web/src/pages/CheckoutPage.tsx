@@ -1,20 +1,23 @@
+import { Button, FormField, Input, Select, formatMoney } from "@ecommerce/ui";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, Navigate } from "react-router-dom";
-import { CheckCircle2 } from "lucide-react";
-import { checkoutFormSchema, type CheckoutFormValues } from "../schemas/checkout";
-import { useCartStore, useCartTotals } from "../store/cart";
 import { useStoreSettings } from "../hooks/queries";
-import { Button, FormField, Input, Select, formatMoney, useToast } from "@ecommerce/ui";
+import { checkoutFormSchema, type CheckoutFormValues } from "../schemas/checkout";
+import { createOrder, initializePayment } from "../services/orders";
+import { useCartStore, useCartTotals } from "../store/cart";
 
 export function CheckoutPage() {
   const items = useCartStore((s) => s.items);
   const clear = useCartStore((s) => s.clear);
   const { subtotal } = useCartTotals();
   const { data: settings } = useStoreSettings();
-  const [placed, setPlaced] = React.useState(false);
-  const { warning } = useToast();
+  const [order, setOrder] = React.useState<Awaited<ReturnType<typeof createOrder>> | null>(null);
+  const [paymentUnavailable, setPaymentUnavailable] = React.useState(false);
+  const [isStartingPayment, setIsStartingPayment] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState("");
 
   const {
     register,
@@ -30,25 +33,64 @@ export function CheckoutPage() {
   const shipping = shippingMethod === "express" ? (settings?.shippingFlatRate ?? 0) * 2 : settings?.shippingFlatRate ?? 0;
   const total = subtotal + shipping;
 
-  async function onSubmit(_values: CheckoutFormValues) {
-    // Mocked: no real payment/order processing yet. This is where Paystack /
-    // Stripe-ready payment flows and POST /orders will be wired in later.
-    await new Promise((r) => setTimeout(r, 700));
-    setPlaced(true);
-    clear();
-    warning("Order placed in demo mode", "No payment was processed because checkout is not connected to a payment provider yet.");
+  async function startPayment(orderId: string, email: string) {
+    setIsStartingPayment(true);
+    setSubmitError("");
+    try {
+      const payment = await initializePayment({ orderId, customerEmail: email });
+      if (!payment.available) {
+        setPaymentUnavailable(true);
+        return;
+      }
+      window.location.assign(payment.authorizationUrl);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Payment could not be started. Your order is still pending.");
+    } finally {
+      setIsStartingPayment(false);
+    }
   }
 
-  if (items.length === 0 && !placed) return <Navigate to="/cart" replace />;
+  async function onSubmit(values: CheckoutFormValues) {
+    setSubmitError("");
+    try {
+      const order = await createOrder({
+        customerEmail: values.email,
+        shippingMethod: values.shippingMethod,
+        shippingAddress: {
+          fullName: values.fullName,
+          phone: values.phone,
+          line1: values.line1,
+          city: values.city,
+          country: values.country,
+          isDefault: false,
+          ...(values.postalCode ? { postalCode: values.postalCode } : {}),
+        },
+        items: items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId ?? null,
+          quantity: item.quantity,
+        })),
+      });
+      setOrder(order);
+      clear();
+      await startPayment(order.id, values.email);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "We could not place your order. Please try again.");
+    }
+  }
 
-  if (placed) {
+  if (items.length === 0 && !order) return <Navigate to="/cart" replace />;
+
+  if (order) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <CheckCircle2 className="mx-auto h-10 w-10 text-moss-500" />
-        <h1 className="font-display mt-4 text-2xl text-ink-900">Order placed</h1>
-        <p className="mt-2 text-sm text-ink-500">
-          This is a mocked confirmation — no payment was processed. Real order handling arrives with the API.
-        </p>
+        {paymentUnavailable ? <AlertCircle className="mx-auto h-10 w-10 text-amber-600" /> : <CheckCircle2 className="mx-auto h-10 w-10 text-moss-500" />}
+        <h1 className="font-display mt-4 text-2xl text-ink-900">Order {paymentUnavailable ? "created" : "awaiting payment"}</h1>
+        <p className="mt-2 text-sm text-ink-500">Order {order.orderNumber} is saved. It will not be marked paid until the payment provider confirms it.</p>
+        {paymentUnavailable && <p role="status" className="mt-3 text-sm text-amber-800">Online payment is not configured yet. Your order remains pending.</p>}
+        {!paymentUnavailable && <Button className="mt-5 w-full" isLoading={isStartingPayment} onClick={() => startPayment(order.id, order.customerEmail)}>Continue to secure payment</Button>}
+        {submitError && <p role="alert" className="mt-3 text-sm text-red-600">{submitError}</p>}
+        <Link to="/orders" className="mt-4 inline-block text-sm text-ink-700 underline">Track this order</Link>
         <Link to="/shop">
           <Button className="mt-6">Continue shopping</Button>
         </Link>
@@ -101,11 +143,12 @@ export function CheckoutPage() {
         </div>
 
         <p className="text-xs text-ink-400">
-          Payment is mocked in this phase. Paystack and a Stripe-ready architecture will be wired in once the API exists.
+          Your order is created first. Payment is confirmed only after secure provider verification.
         </p>
 
+        {submitError && <p role="alert" className="text-sm text-red-600">{submitError}</p>}
         <Button type="submit" size="lg" className="w-full" isLoading={isSubmitting}>
-          Place order
+          Create order
         </Button>
       </form>
 

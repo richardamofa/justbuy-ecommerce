@@ -1,13 +1,14 @@
+import { Button, Card, CardContent, FormField, Input, Skeleton } from "@ecommerce/ui";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { AdminLoadError } from "../components/AdminLoadError";
+import { PageHeader } from "../components/PageHeader";
 import { useAdminSettings, useSaveSettings } from "../hooks/queries";
 import { settingsFormSchema, type SettingsFormValues } from "../schemas/settings";
-import { PageHeader } from "../components/PageHeader";
-import { Button, Card, CardContent, FormField, Input, Skeleton } from "@ecommerce/ui";
 
 export function SettingsPage() {
-  const { data: settings, isLoading } = useAdminSettings();
+  const { data: settings, isLoading, isError, refetch } = useAdminSettings();
   const saveSettings = useSaveSettings();
   const [saved, setSaved] = React.useState(false);
 
@@ -37,6 +38,10 @@ export function SettingsPage() {
     await saveSettings.mutateAsync({ ...settings, ...values });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  if (isError) {
+    return <div><PageHeader title="Settings" description="Store-wide configuration." /><AdminLoadError onRetry={() => { void refetch(); }} /></div>;
   }
 
   if (isLoading || !settings) {

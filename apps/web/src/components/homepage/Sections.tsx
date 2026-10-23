@@ -1,6 +1,9 @@
 import type { Category, Product } from "@ecommerce/contracts";
 import { Button, ProductCard } from "@ecommerce/ui";
+import { CheckCircle2 } from "lucide-react";
+import * as React from "react";
 import { Link } from "react-router-dom";
+import { apiRequest } from "../../lib/api-client";
 
 export function SectionHeader({
   title,
@@ -168,6 +171,30 @@ export function RichContentSection({ html }: { html: string }) {
 }
 
 export function NewsletterSection({ heading, body }: { heading: string; body?: string }) {
+  const [email, setEmail] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [message, setMessage] = React.useState("");
+  const [error, setError] = React.useState("");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setMessage("");
+    setError("");
+    try {
+      const result = await apiRequest<{ status: "pending" | "subscribed" }>("/api/v1/newsletter/subscribe", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setMessage(result.status === "subscribed" ? "Thanks for subscribing. You are on the list." : "Thanks, your sign-up has been recorded.");
+      setEmail("");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "We could not subscribe you. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <section className="border-t border-ink-100 bg-ink-900 py-16 text-paper-50">
       <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
@@ -175,18 +202,24 @@ export function NewsletterSection({ heading, body }: { heading: string; body?: s
         {body && <p className="mt-2 text-sm text-paper-200/80">{body}</p>}
         <form
           className="mt-6 flex flex-col gap-2 sm:flex-row"
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={submit}
         >
           <input
             type="email"
             required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            aria-label="Email address"
             placeholder="you@example.com"
             className="flex-1 rounded border border-paper-50/20 bg-transparent px-4 py-2.5 text-sm placeholder:text-paper-200/50 focus:border-paper-50 focus:outline-none"
           />
-          <Button type="submit" variant="secondary" className="sm:w-auto">
+          <Button type="submit" variant="secondary" className="sm:w-auto" isLoading={isSubmitting}>
             Subscribe
           </Button>
         </form>
+        {message && <p role="status" className="mt-3 flex items-center justify-center gap-2 text-sm text-paper-50"><CheckCircle2 className="h-4 w-4" />{message}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
       </div>
     </section>
   );
