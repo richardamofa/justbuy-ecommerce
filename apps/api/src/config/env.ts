@@ -10,7 +10,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z
     .preprocess(
       (value) => (typeof value === "string" ? value.split(",").map((origin) => origin.trim()).filter(Boolean) : value),
-      z.array(z.string().url()).default(["http://localhost:5173", "http://localhost:5174"])
+      z.array(z.string().url()).default(["http://localhost:5173", "http://localhost:5174","https://justbuy-ecommerce-web-git-main-figoinc.vercel.app","https://justbuy-ecommerce.vercel.app/"])
     ),
   RESEND_API_KEY: z.string().optional(),
   RESEND_AUDIENCE_ID: z.string().optional(),
