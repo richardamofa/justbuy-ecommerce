@@ -6,6 +6,7 @@ import Fastify, {
 import { loadConfig, type AppConfig } from "./config/env.js";
 import { errorFromUnknown } from "./lib/errors.js";
 import { registerAdminAuthRoutes } from "./routes/admin-auth.js";
+import { registerAdminEventRoutes } from "./routes/admin-events.js";
 import { registerCustomerRoutes } from "./routes/customers.js";
 import { registerHomepageRoutes } from "./routes/homepage.js";
 import { registerNewsletterRoutes } from "./routes/newsletter.js";
@@ -14,6 +15,7 @@ import { registerPaymentRoutes } from "./routes/payments.js";
 import { registerProductRoutes } from "./routes/products.js";
 import { registerStoreRoutes } from "./routes/store.js";
 import { registerTaxonomyRoutes } from "./routes/taxonomy.js";
+import { recordAdminEvent } from "./services/admin-event.service.js";
 
 export async function buildApp(
   config: AppConfig = loadConfig(),
@@ -34,6 +36,16 @@ export async function buildApp(
 
       const normalized =
         errorFromUnknown(error);
+
+      if (normalized.statusCode >= 500) {
+        await recordAdminEvent({
+          severity: "error",
+          source: "api",
+          title: `API error ${normalized.statusCode}`,
+          message: `${request.method} ${request.routeOptions.url ?? request.url.split("?")[0]}: ${normalized.message}`,
+          requestId: request.id,
+        }).catch((eventError: unknown) => request.log.error(eventError, "Failed to persist admin event"));
+      }
 
       return reply
         .status(normalized.statusCode)
@@ -102,6 +114,10 @@ export async function buildApp(
   });
 
   await app.register(registerAdminAuthRoutes, {
+    prefix: "/api/v1",
+  });
+
+  await app.register(registerAdminEventRoutes, {
     prefix: "/api/v1",
   });
 

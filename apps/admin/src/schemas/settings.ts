@@ -6,7 +6,8 @@ export const settingsFormSchema = z.object({
   currency: z.string().min(1),
   contactEmail: z.string().email("Enter a valid email").optional().or(z.literal("")),
   supportPhone: z.string().optional(),
-  shippingFlatRate: z.coerce.number().nonnegative(),
+  deliveryFee: z.coerce.number().nonnegative(),
+  pickupLocationsText: z.string().optional(),
   taxRatePercent: z.coerce.number().min(0).max(100),
 });
 export type SettingsFormValues = z.infer<typeof settingsFormSchema>;

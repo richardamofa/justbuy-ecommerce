@@ -7,6 +7,7 @@ import { CategoriesPage } from "./pages/CategoriesPage";
 import { CollectionsPage } from "./pages/CollectionsPage";
 import { CustomersPage } from "./pages/CustomersPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { EventsPage } from "./pages/EventsPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OrdersPage } from "./pages/OrdersPage";
@@ -24,6 +25,7 @@ export default function App() {
       <Route element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/events" element={<EventsPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/collections" element={<CollectionsPage />} />

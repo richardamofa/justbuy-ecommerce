@@ -17,6 +17,9 @@ const envSchema = z.object({
   RESEND_FROM_EMAIL: z.string().optional(),
   ADMIN_NOTIFICATION_EMAIL: z.string().email().optional(),
   PAYSTACK_SECRET_KEY: z.string().optional(),
+  PAYMENT_PROVIDER: z.string().default("paystack"),
+  PAYMENT_PROVIDER_SECRET_KEY: z.string().optional(),
+  PAYMENT_CALLBACK_URL: z.string().url().optional(),
   PAYSTACK_CALLBACK_URL: z.string().url().optional(),
 });
 

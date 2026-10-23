@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
-  Category,
-  Collection,
-  HomepageSection,
-  Order,
-  Product,
-  StoreSettings,
+    Category,
+    Collection,
+    HomepageSection,
+    Order,
+    Product,
+    StoreSettings
 } from "@ecommerce/contracts";
 
 import { useToast } from "@ecommerce/ui";
@@ -286,6 +286,26 @@ export function useAdminCustomer(id: string | null) {
     queryKey: ["admin", "customers", id],
     queryFn: () => api.getCustomer(id!),
     enabled: Boolean(id),
+  });
+}
+
+export function useAdminEvents(isResolved: boolean) {
+  return useQuery({
+    queryKey: ["admin", "events", isResolved],
+    queryFn: () => api.listAdminEvents({ isResolved }),
+  });
+}
+
+export function useSetAdminEventResolved() {
+  const qc = useQueryClient();
+  const { success, error } = useToast();
+  return useMutation({
+    mutationFn: ({ id, isResolved }: { id: string; isResolved: boolean }) => api.setAdminEventResolved(id, isResolved),
+    onSuccess: (_, input) => {
+      void qc.invalidateQueries({ queryKey: ["admin", "events"] });
+      success(input.isResolved ? "Event resolved" : "Event reopened", "The activity log has been updated.");
+    },
+    onError: (err) => error("Unable to update event", getErrorMessage(err, "Please try again.")),
   });
 }
 

@@ -1,17 +1,18 @@
 import { cn } from "@ecommerce/ui";
 import {
-  Boxes,
-  FolderTree,
-  Layers,
-  LayoutDashboard,
-  LayoutTemplate,
-  LogOut,
-  Menu,
-  Package,
-  Settings,
-  ShoppingCart,
-  Users,
-  X,
+    Activity,
+    Boxes,
+    FolderTree,
+    Layers,
+    LayoutDashboard,
+    LayoutTemplate,
+    LogOut,
+    Menu,
+    Package,
+    Settings,
+    ShoppingCart,
+    Users,
+    X,
 } from "lucide-react";
 import * as React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -19,6 +20,7 @@ import { useAdminLogout } from "../../hooks/useAdminAuth";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/events", label: "Activity & errors", icon: Activity },
   { to: "/products", label: "Products", icon: Package },
   { to: "/categories", label: "Categories", icon: FolderTree },
   { to: "/collections", label: "Collections", icon: Layers },
@@ -108,7 +110,7 @@ export function Sidebar() {
         </div>
       )}
 
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-100 bg-paper-50 py-6 md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-ink-100 bg-paper-50 py-6 md:flex">
         <div className="mb-6 px-6">
           <span className="font-display text-lg font-semibold tracking-tight text-ink-900">
             JUSTBUY{" "}

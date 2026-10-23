@@ -5,7 +5,7 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { AdminLoadError } from "../components/AdminLoadError";
 import { PageHeader } from "../components/PageHeader";
-import { useAdminCustomers, useAdminOrders, useAdminProducts } from "../hooks/queries";
+import { useAdminCustomers, useAdminEvents, useAdminOrders, useAdminProducts } from "../hooks/queries";
 
 const statusTone = {
   pending: "neutral",
@@ -13,6 +13,7 @@ const statusTone = {
   processing: "moss",
   shipped: "moss",
   delivered: "moss",
+  completed: "moss",
   cancelled: "signal",
   refunded: "signal",
 } as const;
@@ -37,22 +38,23 @@ export function DashboardPage() {
   const { data: orders = [], isLoading: loadingOrders, isError: ordersError, refetch: refetchOrders } = useAdminOrders();
   const { data: products = [], isLoading: loadingProducts, isError: productsError, refetch: refetchProducts } = useAdminProducts();
   const { data: customers = [], isLoading: loadingCustomers, isError: customersError, refetch: refetchCustomers } = useAdminCustomers();
+  const { data: events, isLoading: loadingEvents, isError: eventsError, refetch: refetchEvents } = useAdminEvents(false);
 
   const revenue = orders
-    .filter((order) => ["paid", "processing", "shipped", "delivered"].includes(order.status))
+    .filter((order) => ["paid", "processing", "shipped", "delivered", "completed"].includes(order.status))
     .reduce((sum, order) => sum + order.total, 0);
   const lowStockProducts = products.filter((p) => isLowStock(p) || isOutOfStock(p));
   const recentOrders = [...orders].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)).slice(0, 5);
 
-  if (ordersError || productsError || customersError) {
-    return <div><PageHeader title="Dashboard" description="An overview of the store." /><AdminLoadError onRetry={() => { void refetchOrders(); void refetchProducts(); void refetchCustomers(); }} /></div>;
+  if (ordersError || productsError || customersError || eventsError) {
+    return <div><PageHeader title="Dashboard" description="An overview of the store." /><AdminLoadError onRetry={() => { void refetchOrders(); void refetchProducts(); void refetchCustomers(); void refetchEvents(); }} /></div>;
   }
 
   return (
     <div>
       <PageHeader title="Dashboard" description="An overview of the store." />
 
-      {loadingOrders || loadingProducts || loadingCustomers ? (
+      {loadingOrders || loadingProducts || loadingCustomers || loadingEvents ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full" />
@@ -63,7 +65,9 @@ export function DashboardPage() {
           <StatCard icon={ShoppingCart} label="Orders" value={orders.length} />
           <StatCard icon={Package} label="Revenue" value={formatMoney(revenue)} />
           <StatCard icon={Users} label="Customers" value={customers.length} />
-          <StatCard icon={AlertTriangle} label="Needs attention" value={lowStockProducts.length} />
+          <Link to="/events" aria-label="Open unresolved events">
+            <StatCard icon={AlertTriangle} label="Needs attention" value={events?.total ?? 0} />
+          </Link>
         </div>
       )}
 

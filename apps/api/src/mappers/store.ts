@@ -11,6 +11,7 @@ type PrismaStoreSettings = {
   socialLinks: unknown;
   themeColor: string;
   shippingFlatRate: unknown;
+  pickupLocations: string[];
   taxRatePercent: unknown;
 };
 
@@ -78,6 +79,8 @@ export function mapStoreSettings(
     themeColor: settings.themeColor,
 
     shippingFlatRate: Number(settings.shippingFlatRate),
+    deliveryFee: Number(settings.shippingFlatRate),
+    pickupLocations: settings.pickupLocations,
 
     taxRatePercent: Number(settings.taxRatePercent),
   };

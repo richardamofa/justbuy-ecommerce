@@ -9,5 +9,7 @@ export const mockStoreSettings: StoreSettings = {
   socialLinks: { instagram: "https://instagram.com" },
   themeColor: "#15171B",
   shippingFlatRate: 35,
+  deliveryFee: 35,
+  pickupLocations: ["JustBuy Osu Pickup Point"],
   taxRatePercent: 0,
 };

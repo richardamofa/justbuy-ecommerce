@@ -26,11 +26,11 @@ export function CheckoutPage() {
     formState: { errors, isSubmitting },
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutFormSchema),
-    defaultValues: { shippingMethod: "standard" },
+    defaultValues: { fulfillmentMethod: "delivery" },
   });
 
-  const shippingMethod = watch("shippingMethod");
-  const shipping = shippingMethod === "express" ? (settings?.shippingFlatRate ?? 0) * 2 : settings?.shippingFlatRate ?? 0;
+  const fulfillmentMethod = watch("fulfillmentMethod");
+  const shipping = fulfillmentMethod === "delivery" ? settings?.deliveryFee ?? 0 : 0;
   const total = subtotal + shipping;
 
   async function startPayment(orderId: string, email: string) {
@@ -55,16 +55,23 @@ export function CheckoutPage() {
     try {
       const order = await createOrder({
         customerEmail: values.email,
-        shippingMethod: values.shippingMethod,
-        shippingAddress: {
-          fullName: values.fullName,
-          phone: values.phone,
-          line1: values.line1,
-          city: values.city,
-          country: values.country,
-          isDefault: false,
-          ...(values.postalCode ? { postalCode: values.postalCode } : {}),
-        },
+        customerName: values.fullName,
+        customerPhone: values.phone,
+        fulfillmentMethod: values.fulfillmentMethod,
+        fulfillmentLocation: values.fulfillmentMethod === "pickup"
+          ? values.fulfillmentLocation!
+          : [values.line1, values.city, values.country].filter(Boolean).join(", "),
+        ...(values.fulfillmentMethod === "delivery" ? {
+          shippingAddress: {
+            fullName: values.fullName,
+            phone: values.phone,
+            line1: values.line1!,
+            city: values.city!,
+            country: values.country!,
+            isDefault: false,
+            ...(values.postalCode ? { postalCode: values.postalCode } : {}),
+          },
+        } : {}),
         items: items.map((item) => ({
           productId: item.productId,
           variantId: item.variantId ?? null,
@@ -109,37 +116,36 @@ export function CheckoutPage() {
         </div>
 
         <div>
-          <h2 className="mb-4 text-sm font-semibold text-ink-900">Shipping address</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Full name" htmlFor="fullName" error={errors.fullName?.message}>
-              <Input id="fullName" {...register("fullName")} />
-            </FormField>
-            <FormField label="Phone" htmlFor="phone" error={errors.phone?.message}>
-              <Input id="phone" {...register("phone")} />
-            </FormField>
-            <FormField label="Address" htmlFor="line1" error={errors.line1?.message} className="sm:col-span-2">
-              <Input id="line1" {...register("line1")} />
-            </FormField>
-            <FormField label="City" htmlFor="city" error={errors.city?.message}>
-              <Input id="city" {...register("city")} />
-            </FormField>
-            <FormField label="Country" htmlFor="country" error={errors.country?.message}>
-              <Input id="country" {...register("country")} />
-            </FormField>
-            <FormField label="Postal code (optional)" htmlFor="postalCode">
-              <Input id="postalCode" {...register("postalCode")} />
-            </FormField>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="mb-4 text-sm font-semibold text-ink-900">Shipping method</h2>
-          <FormField htmlFor="shippingMethod">
-            <Select id="shippingMethod" {...register("shippingMethod")}>
-              <option value="standard">Standard — {formatMoney(settings?.shippingFlatRate ?? 0)}</option>
-              <option value="express">Express — {formatMoney((settings?.shippingFlatRate ?? 0) * 2)}</option>
+          <h2 className="mb-4 text-sm font-semibold text-ink-900">Fulfillment</h2>
+          <FormField label="Choose delivery or pickup" htmlFor="fulfillmentMethod">
+            <Select id="fulfillmentMethod" {...register("fulfillmentMethod")}>
+              <option value="delivery">Delivery — {formatMoney(settings?.deliveryFee ?? 0)}</option>
+              <option value="pickup">Pickup — Free</option>
             </Select>
           </FormField>
+          {fulfillmentMethod === "delivery" ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <FormField label="Street address" htmlFor="line1" error={errors.line1?.message} className="sm:col-span-2">
+                <Input id="line1" autoComplete="street-address" {...register("line1")} />
+              </FormField>
+              <FormField label="City" htmlFor="city" error={errors.city?.message}>
+                <Input id="city" autoComplete="address-level2" {...register("city")} />
+              </FormField>
+              <FormField label="Country" htmlFor="country" error={errors.country?.message}>
+                <Input id="country" autoComplete="country-name" {...register("country")} />
+              </FormField>
+              <FormField label="Postal code (optional)" htmlFor="postalCode">
+                <Input id="postalCode" {...register("postalCode")} />
+              </FormField>
+            </div>
+          ) : (
+            <FormField label="Pickup location" htmlFor="fulfillmentLocation" error={errors.fulfillmentLocation?.message} className="mt-4">
+              <Select id="fulfillmentLocation" disabled={!settings?.pickupLocations.length} {...register("fulfillmentLocation")}>
+                <option value="">{settings?.pickupLocations.length ? "Select a pickup point" : "No pickup locations configured"}</option>
+                {settings?.pickupLocations.map((location) => <option key={location} value={location}>{location}</option>)}
+              </Select>
+            </FormField>
+          )}
         </div>
 
         <p className="text-xs text-ink-400">
@@ -170,7 +176,7 @@ export function CheckoutPage() {
             <span>{formatMoney(subtotal)}</span>
           </div>
           <div className="flex justify-between text-ink-500">
-            <span>Shipping</span>
+            <span>{fulfillmentMethod === "pickup" ? "Pickup" : "Delivery fee"}</span>
             <span>{formatMoney(shipping)}</span>
           </div>
           <div className="flex justify-between pt-1 text-base font-medium text-ink-900">

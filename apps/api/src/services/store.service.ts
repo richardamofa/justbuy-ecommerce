@@ -69,8 +69,12 @@ export async function updateStoreSettings(
     data.themeColor = parsed.themeColor;
   }
 
-  if (parsed.shippingFlatRate !== undefined) {
-    data.shippingFlatRate = parsed.shippingFlatRate;
+  if (parsed.deliveryFee !== undefined || parsed.shippingFlatRate !== undefined) {
+    data.shippingFlatRate = parsed.deliveryFee ?? parsed.shippingFlatRate ?? 0;
+  }
+
+  if (parsed.pickupLocations !== undefined) {
+    data.pickupLocations = parsed.pickupLocations;
   }
 
   if (parsed.taxRatePercent !== undefined) {
@@ -92,7 +96,8 @@ export async function updateStoreSettings(
       supportPhone: parsed.supportPhone,
       socialLinks: (parsed.socialLinks ?? {}) as Prisma.InputJsonValue,
       themeColor: parsed.themeColor ?? "#111111",
-      shippingFlatRate: parsed.shippingFlatRate ?? 0,
+      shippingFlatRate: parsed.deliveryFee ?? parsed.shippingFlatRate ?? 0,
+      pickupLocations: parsed.pickupLocations ?? [],
       taxRatePercent: parsed.taxRatePercent ?? 0,
     },
     update: data,

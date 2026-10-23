@@ -42,7 +42,52 @@ export function adminOrderNotification(order: Order) {
       <table style="width:100%;border-collapse:collapse;margin:24px 0">${itemRows(order)}</table>
       <p style="text-align:right;font-weight:bold">Total: ${order.currency} ${order.total.toFixed(2)}</p>
       ${order.inventoryIssue ? "<p style=\"color:#b91c1c;font-weight:bold\">Inventory needs attention: one or more items could not be deducted from stock.</p>" : ""}
-      <p style="font-size:13px;color:#6b6b6b">Shipping address: ${escapeHtml(order.shippingAddress?.fullName ?? "")}, ${escapeHtml(order.shippingAddress?.line1 ?? "")}, ${escapeHtml(order.shippingAddress?.city ?? "")}</p>
+      <p style="font-size:13px;color:#6b6b6b">${fulfillmentDescription(order)}</p>
+    </div>`,
+  };
+}
+
+function fulfillmentDescription(order: Order) {
+  return `${order.fulfillmentMethod === "pickup" ? "Pickup" : "Delivery"}: ${escapeHtml(order.fulfillmentLocation)}`;
+}
+
+export function customerOrderReceived(order: Order) {
+  return {
+    subject: `We received order ${order.orderNumber}`,
+    html: `<div style="font-family:Arial,sans-serif;color:#171717;max-width:600px;margin:auto;padding:32px">
+      <p style="color:#1f3a36;font-weight:bold;letter-spacing:2px">JUSTBUY</p>
+      <h1 style="font-size:24px">Your order is received</h1>
+      <p>Order <strong>${escapeHtml(order.orderNumber)}</strong> is ${order.paymentStatus === "paid" ? "paid" : "awaiting payment"}.</p>
+      <p>${fulfillmentDescription(order)}</p>
+      <table style="width:100%;border-collapse:collapse;margin:24px 0">${itemRows(order)}</table>
+      <p style="text-align:right;font-weight:bold">Total: ${order.currency} ${order.total.toFixed(2)}</p>
+    </div>`,
+  };
+}
+
+export function adminNewOrderNotification(order: Order) {
+  return {
+    subject: `New order ${order.orderNumber}`,
+    html: `<div style="font-family:Arial,sans-serif;color:#171717;max-width:600px;margin:auto;padding:32px">
+      <p style="color:#1f3a36;font-weight:bold;letter-spacing:2px">JUSTBUY ORDER ALERT</p>
+      <h1 style="font-size:24px">New order received</h1>
+      <p>${escapeHtml(order.customerEmail)} placed <strong>${escapeHtml(order.orderNumber)}</strong>. Payment: ${order.paymentStatus}.</p>
+      <p>${fulfillmentDescription(order)}</p>
+      <table style="width:100%;border-collapse:collapse;margin:24px 0">${itemRows(order)}</table>
+      <p style="text-align:right;font-weight:bold">Total: ${order.currency} ${order.total.toFixed(2)}</p>
+    </div>`,
+  };
+}
+
+export function customerOrderStatusUpdate(order: Order) {
+  return {
+    subject: `Order ${order.orderNumber}: ${order.status}`,
+    html: `<div style="font-family:Arial,sans-serif;color:#171717;max-width:600px;margin:auto;padding:32px">
+      <p style="color:#1f3a36;font-weight:bold;letter-spacing:2px">JUSTBUY</p>
+      <h1 style="font-size:24px">Your order is ${escapeHtml(order.status)}</h1>
+      <p>Order <strong>${escapeHtml(order.orderNumber)}</strong> is now ${escapeHtml(order.status)}.</p>
+      <p>${fulfillmentDescription(order)}</p>
+      <p style="font-size:13px;color:#6b6b6b">Order total: ${order.currency} ${order.total.toFixed(2)}</p>
     </div>`,
   };
 }

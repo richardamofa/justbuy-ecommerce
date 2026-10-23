@@ -52,6 +52,7 @@ async function main() {
       },
       themeColor: "#1F3A36",
       shippingFlatRate: new Prisma.Decimal("25.00"),
+      pickupLocations: ["JustBuy Osu Pickup Point"],
       taxRatePercent: new Prisma.Decimal("0"),
     },
     create: {
@@ -70,6 +71,7 @@ async function main() {
       },
       themeColor: "#1F3A36",
       shippingFlatRate: new Prisma.Decimal("25.00"),
+      pickupLocations: ["JustBuy Osu Pickup Point"],
       taxRatePercent: new Prisma.Decimal("0"),
     },
   });

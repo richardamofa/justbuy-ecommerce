@@ -10,6 +10,7 @@ import { randomBytes } from "node:crypto";
 import { HttpError } from "../lib/errors.js";
 import { prisma } from "../lib/prisma.js";
 import { mapOrder } from "../mappers/order.js";
+import { sendOrderCreatedEmails, sendOrderStatusEmail } from "./email.service.js";
 
 function generateOrderNumber(): string {
   const timestamp = Date.now()
@@ -222,13 +223,21 @@ export async function createOrder(
       },
     });
 
+  if (input.fulfillmentMethod === "pickup") {
+    if (!settings?.pickupLocations.includes(input.fulfillmentLocation)) {
+      throw HttpError.validation("Choose a configured pickup location.");
+    }
+  } else if (!input.shippingAddress) {
+    throw HttpError.validation("A delivery address is required for delivery orders.");
+  }
+
   const shippingRate = settings?.shippingFlatRate
     ? new Prisma.Decimal(
         settings.shippingFlatRate,
       )
     : new Prisma.Decimal(0);
-  const shipping = input.shippingMethod === "express"
-    ? shippingRate.mul(2)
+  const shipping = input.fulfillmentMethod === "pickup"
+    ? new Prisma.Decimal(0)
     : shippingRate;
 
   const taxRate = settings?.taxRatePercent
@@ -258,14 +267,14 @@ export async function createOrder(
   const order =
     await prisma.$transaction(
       async (tx) => {
-        const customerName = input.shippingAddress?.fullName.trim().split(/\s+/) ?? [];
+        const customerName = input.customerName.trim().split(/\s+/);
         const customer = await tx.customer.upsert({
           where: { email: customerEmail },
           create: {
             email: customerEmail,
             firstName: customerName[0] ?? "Customer",
             lastName: customerName.slice(1).join(" "),
-            phone: input.shippingAddress?.phone,
+            phone: input.customerPhone,
           },
           update: {
             ...(customerName.length
@@ -274,9 +283,7 @@ export async function createOrder(
                   lastName: customerName.slice(1).join(" "),
                 }
               : {}),
-            ...(input.shippingAddress?.phone
-              ? { phone: input.shippingAddress.phone }
-              : {}),
+            phone: input.customerPhone,
           },
         });
 
@@ -322,6 +329,8 @@ export async function createOrder(
               customer: { connect: { id: customer.id } },
 
               customerEmail,
+              fulfillmentMethod: input.fulfillmentMethod,
+              fulfillmentLocation: input.fulfillmentLocation,
 
               status: "pending",
 
@@ -385,7 +394,9 @@ export async function createOrder(
       },
     );
 
-  return mapOrder(order);
+  const mappedOrder = mapOrder(order);
+  await sendOrderCreatedEmails(mappedOrder);
+  return mappedOrder;
 }
 
 export async function getOrderById(
@@ -500,11 +511,28 @@ export async function updateOrderStatus(
   if (input.status === "paid" && existing.paymentStatus !== "paid") {
     throw HttpError.conflict("An order can only be marked paid after provider verification.");
   }
-  if (["processing", "shipped", "delivered"].includes(input.status) && existing.paymentStatus !== "paid") {
+  if (["processing", "shipped", "delivered", "completed"].includes(input.status) && existing.paymentStatus !== "paid") {
     throw HttpError.conflict("Payment must be verified before fulfilment can advance.");
   }
   if (existing.paymentStatus === "paid" && input.status === "pending") {
     throw HttpError.conflict("A paid order cannot return to pending.");
+  }
+  if (existing.fulfillmentMethod === "pickup" && ["shipped", "delivered"].includes(input.status)) {
+    throw HttpError.conflict("Pickup orders cannot use delivery statuses.");
+  }
+  if (input.status === "shipped" && existing.status !== "processing") {
+    throw HttpError.conflict("An order must be processing before it can be shipped.");
+  }
+  if (input.status === "delivered" && existing.status !== "shipped") {
+    throw HttpError.conflict("An order must be shipped before it can be marked delivered.");
+  }
+  if (input.status === "completed") {
+    const canComplete = existing.fulfillmentMethod === "pickup"
+      ? existing.status === "processing"
+      : existing.status === "delivered";
+    if (!canComplete) {
+      throw HttpError.conflict("Delivery orders must be delivered, or pickup orders processing, before completion.");
+    }
   }
 
   const order =
@@ -522,7 +550,9 @@ export async function updateOrderStatus(
       },
     });
 
-  return mapOrder(order);
+  const mappedOrder = mapOrder(order);
+  if (existing.status !== input.status) await sendOrderStatusEmail(mappedOrder);
+  return mappedOrder;
 }
 
 export async function getOrderByNumberAndEmail(

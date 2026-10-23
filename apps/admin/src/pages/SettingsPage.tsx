@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, FormField, Input, Skeleton } from "@ecommerce/ui";
+import { Button, Card, CardContent, FormField, Input, Skeleton, Textarea } from "@ecommerce/ui";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -27,7 +27,8 @@ export function SettingsPage() {
         currency: settings.currency,
         contactEmail: settings.contactEmail ?? "",
         supportPhone: settings.supportPhone ?? "",
-        shippingFlatRate: settings.shippingFlatRate,
+        deliveryFee: settings.deliveryFee,
+        pickupLocationsText: settings.pickupLocations.join("\n"),
         taxRatePercent: settings.taxRatePercent,
       });
     }
@@ -35,7 +36,12 @@ export function SettingsPage() {
 
   async function onSubmit(values: SettingsFormValues) {
     if (!settings) return;
-    await saveSettings.mutateAsync({ ...settings, ...values });
+    const { pickupLocationsText, ...settingsValues } = values;
+    await saveSettings.mutateAsync({
+      ...settings,
+      ...settingsValues,
+      pickupLocations: (pickupLocationsText ?? "").split("\n").map((location) => location.trim()).filter(Boolean),
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -76,8 +82,11 @@ export function SettingsPage() {
               <FormField label="Support phone" htmlFor="supportPhone">
                 <Input id="supportPhone" {...register("supportPhone")} />
               </FormField>
-              <FormField label="Flat shipping rate" htmlFor="shippingFlatRate" error={errors.shippingFlatRate?.message}>
-                <Input id="shippingFlatRate" type="number" step="0.01" {...register("shippingFlatRate")} />
+              <FormField label="Delivery fee" htmlFor="deliveryFee" error={errors.deliveryFee?.message}>
+                <Input id="deliveryFee" type="number" step="0.01" {...register("deliveryFee")} />
+              </FormField>
+              <FormField label="Pickup locations" htmlFor="pickupLocationsText" hint="One pickup location per line.">
+                <Textarea id="pickupLocationsText" rows={4} {...register("pickupLocationsText")} />
               </FormField>
               <FormField label="Tax rate (%)" htmlFor="taxRatePercent" error={errors.taxRatePercent?.message}>
                 <Input id="taxRatePercent" type="number" step="0.1" {...register("taxRatePercent")} />

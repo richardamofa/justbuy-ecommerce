@@ -99,10 +99,13 @@ export function mapOrder(
     })),
 
     status: order.status,
+    fulfillmentMethod: order.fulfillmentMethod,
+    fulfillmentLocation: order.fulfillmentLocation,
     paymentStatus: order.paymentStatus,
     ...(order.paymentReference ? { paymentReference: order.paymentReference } : {}),
     ...(order.paidAt ? { paidAt: order.paidAt.toISOString() } : {}),
     inventoryIssue: order.inventoryIssue,
+    deliveryFee: Number(order.shipping),
 
     subtotal: Number(order.subtotal),
     shipping: Number(order.shipping),
